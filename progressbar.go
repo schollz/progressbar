@@ -1,6 +1,7 @@
 package progressbar
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -49,6 +50,21 @@ func New(max int) *ProgressBar {
 	return p
 }
 
+// Reset will reset the clock
+func (p *ProgressBar) Reset() {
+	p.Lock()
+	defer p.Unlock()
+	p.lastShown = time.Now()
+	p.startTime = time.Now()
+}
+
+// Set the max of the progress bar
+func (p *ProgressBar) Set(num int) {
+	p.Lock()
+	defer p.Unlock()
+	p.Max = num
+}
+
 // Add a certain amount to the progress bar
 func (p *ProgressBar) Add(num int) error {
 	p.Lock()
@@ -56,7 +72,7 @@ func (p *ProgressBar) Add(num int) error {
 	percent := float64(p.currentNum) / float64(p.Max)
 	p.currentSaucerSize = int(percent * float64(p.Size))
 	p.currentPercent = int(percent * 100)
-	updateBar := p.currentPercent != p.lastPercent
+	updateBar := p.currentPercent != p.lastPercent && p.currentPercent > 0
 	p.lastPercent = p.currentPercent
 	p.Unlock()
 	if updateBar {
@@ -69,8 +85,11 @@ func (p *ProgressBar) Add(num int) error {
 func (p *ProgressBar) Show() error {
 	p.RLock()
 	defer p.RUnlock()
+	if p.currentNum > p.Max {
+		return errors.New("current number exceeds max")
+	}
 	secondsLeft := time.Since(p.startTime).Seconds() / float64(p.currentNum) * (float64(p.Max) - float64(p.currentNum))
-	s := fmt.Sprintf("\r%3d%% %s%s%s%s [%s:%s]",
+	s := fmt.Sprintf("\r%3d%% %s%s%s%s [%s:%s]            ",
 		p.currentPercent,
 		p.leftBookend,
 		strings.Repeat(p.symbolFinished, p.currentSaucerSize),
