@@ -20,3 +20,9 @@ for i := 0; i < 100; i++ {
     time.Sleep(10 * time.Millisecond)
 }
 ```
+
+which looks like:
+
+```bash
+ 100% |████████████████████████████████████████| [1s:0s]            
+ ```
