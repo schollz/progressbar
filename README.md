@@ -7,6 +7,14 @@
 
 A very simple progress bar.
 
+## Install
+
+```
+go get -u github.com/schollz/progressbar
+```
+
+## Usage 
+
 **Basic usage:**
 
 ```golang
@@ -22,3 +30,18 @@ which looks like:
 ```bash
  100% |████████████████████████████████████████| [1s:0s]            
  ```
+
+The times at the end show the elapsed time and the remaining time, respectively. 
+
+## Contributing
+
+Pull requests are welcome. Feel free to...
+
+- Revise documentation
+- Add new features
+- Fix bugs
+- Suggest improvements
+
+## License
+
+MIT
