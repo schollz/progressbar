@@ -5,7 +5,9 @@
 ![coverage](https://img.shields.io/badge/coverage-94%25-brightgreen.svg)
 [![godocs](https://godoc.org/github.com/schollz/progressbar?status.svg)](https://godoc.org/github.com/schollz/progressbar) 
 
-A very simple progress bar.
+A very simple thread-safe progress bar which should work on every OS without problems.
+
+![Example of progress bar](https://user-images.githubusercontent.com/6550035/32120326-5f420d42-bb15-11e7-89d4-c502864e78eb.gif)
 
 ## Install
 
