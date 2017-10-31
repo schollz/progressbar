@@ -114,7 +114,7 @@ func (p *ProgressBar) Show() error {
 		strings.Repeat(p.symbolFinished, p.currentSaucerSize),
 		strings.Repeat(p.symbolLeft, p.size-p.currentSaucerSize),
 		p.rightBookend,
-		time.Since(p.startTime).Round(time.Second).String(),
+		(time.Duration(time.Since(p.startTime).Seconds()) * time.Second).String(),
 		(time.Duration(secondsLeft) * time.Second).String(),
 	)
 
