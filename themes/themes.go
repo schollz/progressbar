@@ -31,14 +31,14 @@ func NewDefault(n uint8) ([]string, error) {
 	return New(string(defaultSymbolsFinished[n])), nil
 }
 
-func NewFromRunes(symbols []rune) []string {
+func NewFromRunes(symbols []rune) ([]string, error) {
 	if len(symbols) != 4 {
-		return errors.New("symbols lenght must be exactly 4")
+		return []string{}, errors.New("symbols lenght must be exactly 4")
 	}
 	return []string{
-		symbols[0],
-		symbols[1],
-		symbols[2],
-		symbols[3],
-	}
+		string(symbols[0]),
+		string(symbols[1]),
+		string(symbols[2]),
+		string(symbols[3]),
+	}, nil
 }
