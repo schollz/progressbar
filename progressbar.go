@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -113,6 +114,12 @@ func (p *ProgressBar) Show() error {
 	_, err := io.WriteString(p.w, s)
 	if err != nil {
 		return err
+	}
+
+	// handle mac os newline
+	// this breaks your test for some reason
+	if runtime.GOOS == "darwin" {
+		fmt.Fprintf(p.w, "\033[%dA", 0)
 	}
 
 	if f, ok := p.w.(*os.File); ok {
