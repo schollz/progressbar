@@ -73,6 +73,13 @@ func (p *ProgressBar) SetSize(size int) {
 	p.size = size
 }
 
+// SetWriter will specify a different writer than os.Stdout
+func (p *ProgressBar) SetWriter(w io.Writer) {
+	p.Lock()
+	defer p.Unlock()
+	p.w = w
+}
+
 // Add with increase the current count on the progress bar
 func (p *ProgressBar) Add(num int) error {
 	p.RLock()
