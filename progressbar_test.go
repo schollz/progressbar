@@ -26,3 +26,11 @@ func TestBar(t *testing.T) {
 		t.Error("should have an error for adding > bar")
 	}
 }
+
+func ExampleProgressBar_RenderBlank() {
+	bar := New(10)
+	bar.SetSize(10)
+	bar.RenderBlank()
+	// Output:
+	// 0% |          | [0s:0s]
+}

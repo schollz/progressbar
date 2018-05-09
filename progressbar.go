@@ -48,6 +48,10 @@ func New(max int) *ProgressBar {
 	}
 }
 
+func (p ProgressBar) RenderBlank() {
+	renderProgressBar(p)
+}
+
 // Reset will reset the clock that is used
 // to calculate current time and the time left.
 func (p *ProgressBar) Reset() {
@@ -91,30 +95,38 @@ func (p *ProgressBar) Add(num int) error {
 	p.currentSaucerSize = int(percent * float64(p.size))
 	p.currentPercent = int(percent * 100)
 	updateBar := p.currentPercent != p.lastPercent && p.currentPercent > 0
+
 	p.lastPercent = p.currentPercent
 	if p.currentNum > p.max {
 		return errors.New("current number exceeds max")
 	}
 
 	if updateBar {
-		leftTime := time.Since(p.startTime).Seconds() / float64(p.currentNum) * (float64(p.max) - float64(p.currentNum))
-		s := fmt.Sprintf("\r%4d%% %s%s%s%s [%s:%s]            ",
-			p.currentPercent,
-			p.theme[2],
-			strings.Repeat(p.theme[0], p.currentSaucerSize),
-			strings.Repeat(p.theme[1], p.size-p.currentSaucerSize),
-			p.theme[3],
-			(time.Duration(time.Since(p.startTime).Seconds()) * time.Second).String(),
-			(time.Duration(leftTime) * time.Second).String(),
-		)
-		_, err := io.WriteString(p.w, s)
-		if err != nil {
-			return err
-		}
-
-		if f, ok := p.w.(*os.File); ok {
-			f.Sync()
-		}
+		return renderProgressBar(*p)
 	}
+
+	return nil
+}
+
+func renderProgressBar(p ProgressBar) error {
+	leftTime := time.Since(p.startTime).Seconds() / float64(p.currentNum) * (float64(p.max) - float64(p.currentNum))
+	s := fmt.Sprintf("\r%4d%% %s%s%s%s [%s:%s]            ",
+		p.currentPercent,
+		p.theme[2],
+		strings.Repeat(p.theme[0], p.currentSaucerSize),
+		strings.Repeat(p.theme[1], p.size-p.currentSaucerSize),
+		p.theme[3],
+		(time.Duration(time.Since(p.startTime).Seconds()) * time.Second).String(),
+		(time.Duration(leftTime) * time.Second).String(),
+	)
+	_, err := io.WriteString(p.w, s)
+	if err != nil {
+		return err
+	}
+
+	if f, ok := p.w.(*os.File); ok {
+		f.Sync()
+	}
+
 	return nil
 }
