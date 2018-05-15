@@ -30,6 +30,9 @@ func TestBar(t *testing.T) {
 func ExampleProgressBar_RenderBlank() {
 	bar := New(10)
 	bar.SetSize(10)
+	bar.Add(5)
+	bar.Reset()
+
 	bar.RenderBlank()
 	// Output:
 	// 0% |          | [0s:0s]
