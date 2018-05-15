@@ -86,10 +86,9 @@ func NewOptions(options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: getBlankState(),
 		config: config{
-			writer:               os.Stdout,
-			theme:                defaultTheme,
-			size:                 40,
-			renderWithBlankState: true,
+			writer: os.Stdout,
+			theme:  defaultTheme,
+			size:   40,
 		},
 		lock: sync.RWMutex{},
 	}
