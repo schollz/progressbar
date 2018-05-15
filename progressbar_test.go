@@ -1,12 +1,13 @@
 package progressbar
 
 import (
+	"io/ioutil"
 	"testing"
 	"time"
 )
 
 func ExampleProgressBar() {
-	bar := NewOptions(OptionSetMax(100), OptionSetSize(10))
+	bar := NewOptions(OptionSetMax(100), OptionSetSize(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -26,19 +27,32 @@ func TestBar(t *testing.T) {
 }
 
 func ExampleProgressBar_RenderBlank() {
-	bar := NewOptions(OptionSetMax(10), OptionSetSize(10))
-	bar.RenderBlank()
+	NewOptions(OptionSetMax(10), OptionSetSize(10), OptionSetRenderBlankState(true))
 	// Output:
 	// 0% |          | [0s:0s]
 }
 
-func TestSetMax(t *testing.T) {
-	var b *ProgressBar
-	expect := 999
-	b = NewOptions(OptionSetMax(expect))
+func TestBasicSets(t *testing.T) {
+	b := NewOptions(
+		OptionSetMax(999),
+		OptionSetSize(888),
+		OptionSetRenderBlankState(true),
 
-	if b.config.max != expect {
-		t.Errorf("Expected max to be %d, instead I got %d\n%+v", expect, b.config.max, b)
+		OptionSetWriter(ioutil.Discard), // suppressing output for this test
+	)
+
+	tc := b.config
+
+	if tc.max != 999 {
+		t.Errorf("Expected %s to be %d, instead I got %d\n%+v", "max", 999, tc.max, b)
+	}
+
+	if tc.size != 888 {
+		t.Errorf("Expected %s to be %d, instead I got %d\n%+v", "size", 999, tc.max, b)
+	}
+
+	if tc.renderWithBlankState != true {
+		t.Errorf("Expected %s to be %t, instead I got %t\n%+v", "renderWithBlankState", true, tc.renderWithBlankState, b)
 	}
 
 }

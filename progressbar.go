@@ -30,10 +30,11 @@ type state struct {
 }
 
 type config struct {
-	max    int // max number of the counter
-	size   int // size of the saucer
-	writer io.Writer
-	theme  Theme
+	max                  int // max number of the counter
+	size                 int // size of the saucer
+	writer               io.Writer
+	theme                Theme
+	renderWithBlankState bool
 }
 
 type Theme struct {
@@ -73,21 +74,32 @@ func OptionSetWriter(w io.Writer) Option {
 	}
 }
 
+func OptionSetRenderBlankState(r bool) Option {
+	return func(p *ProgressBar) {
+		p.config.renderWithBlankState = r
+	}
+}
+
 var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
 
 func NewOptions(options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: getBlankState(),
 		config: config{
-			writer: os.Stdout,
-			theme:  defaultTheme,
-			size:   40,
+			writer:               os.Stdout,
+			theme:                defaultTheme,
+			size:                 40,
+			renderWithBlankState: true,
 		},
 		lock: sync.RWMutex{},
 	}
 
 	for _, o := range options {
 		o(&b)
+	}
+
+	if b.config.renderWithBlankState {
+		b.RenderBlank()
 	}
 
 	return &b
