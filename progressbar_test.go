@@ -7,7 +7,7 @@ import (
 )
 
 func ExampleProgressBar() {
-	bar := NewOptions(OptionSetMax(100), OptionSetSize(10), OptionSetRenderBlankState(false))
+	bar := NewOptions(100, OptionSetSize(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -27,14 +27,14 @@ func TestBar(t *testing.T) {
 }
 
 func ExampleProgressBar_RenderBlank() {
-	NewOptions(OptionSetMax(10), OptionSetSize(10), OptionSetRenderBlankState(true))
+	NewOptions(10, OptionSetSize(10), OptionSetRenderBlankState(true))
 	// Output:
 	// 0% |          | [0s:0s]
 }
 
 func TestBasicSets(t *testing.T) {
 	b := NewOptions(
-		OptionSetMax(999),
+		999,
 		OptionSetSize(888),
 		OptionSetRenderBlankState(true),
 

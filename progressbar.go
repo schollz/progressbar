@@ -46,13 +46,6 @@ type Theme struct {
 
 type Option func(p *ProgressBar)
 
-// OptionSetMax sets the maximum value to progress to
-func OptionSetMax(max int) Option {
-	return func(p *ProgressBar) {
-		p.config.max = max
-	}
-}
-
 // OptionSetSize sets the width of the bar
 func OptionSetSize(s int) Option {
 	return func(p *ProgressBar) {
@@ -82,13 +75,14 @@ func OptionSetRenderBlankState(r bool) Option {
 
 var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
 
-func NewOptions(options ...Option) *ProgressBar {
+func NewOptions(max int, options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: getBlankState(),
 		config: config{
 			writer: os.Stdout,
 			theme:  defaultTheme,
 			size:   40,
+			max:    max,
 		},
 		lock: sync.RWMutex{},
 	}
@@ -115,7 +109,7 @@ func getBlankState() state {
 // New returns a new ProgressBar
 // with the specified maximum
 func New(max int) *ProgressBar {
-	return NewOptions(OptionSetMax(max))
+	return NewOptions(max)
 }
 
 func (p *ProgressBar) RenderBlank() error {
