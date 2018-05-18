@@ -31,7 +31,7 @@ type state struct {
 
 type config struct {
 	max                  int // max number of the counter
-	size                 int // size of the saucer
+	width                int
 	writer               io.Writer
 	theme                Theme
 	renderWithBlankState bool
@@ -46,10 +46,10 @@ type Theme struct {
 
 type Option func(p *ProgressBar)
 
-// OptionSetSize sets the width of the bar
-func OptionSetSize(s int) Option {
+// OptionSetWidth sets the width of the bar
+func OptionSetWidth(s int) Option {
 	return func(p *ProgressBar) {
-		p.config.size = s
+		p.config.width = s
 	}
 }
 
@@ -81,7 +81,7 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 		config: config{
 			writer: os.Stdout,
 			theme:  defaultTheme,
-			size:   40,
+			width:  40,
 			max:    max,
 		},
 		lock: sync.RWMutex{},
@@ -135,7 +135,7 @@ func (p *ProgressBar) Add(num int) error {
 	}
 	p.state.currentNum += num
 	percent := float64(p.state.currentNum) / float64(p.config.max)
-	p.state.currentSaucerSize = int(percent * float64(p.config.size))
+	p.state.currentSaucerSize = int(percent * float64(p.config.width))
 	p.state.currentPercent = int(percent * 100)
 	updateBar := p.state.currentPercent != p.state.lastPercent && p.state.currentPercent > 0
 
@@ -161,7 +161,7 @@ func renderProgressBar(c config, s state) error {
 		s.currentPercent,
 		c.theme.BarStart,
 		strings.Repeat(c.theme.Saucer, s.currentSaucerSize),
-		strings.Repeat(c.theme.SaucerPadding, c.size-s.currentSaucerSize),
+		strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
 		c.theme.BarEnd,
 		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
 		(time.Duration(leftTime) * time.Second).String(),
