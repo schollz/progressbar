@@ -2,6 +2,7 @@ package progressbar
 
 import (
 	"io/ioutil"
+	"strings"
 	"testing"
 	"time"
 )
@@ -54,5 +55,21 @@ func TestBasicSets(t *testing.T) {
 	if tc.renderWithBlankState != true {
 		t.Errorf("Expected %s to be %t, instead I got %t\n%+v", "renderWithBlankState", true, tc.renderWithBlankState, b)
 	}
+}
 
+func TestOptionSetTheme(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(
+		10,
+		OptionSetTheme(Theme{Saucer: "#", SaucerPadding: "-", BarStart: ">", BarEnd: "<"}),
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+	)
+
+	bar.Add(5)
+	result := strings.TrimSpace(buf.String())
+	expect := "50% >#####-----< [0s:0s]"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
 }
