@@ -52,7 +52,7 @@ func TestBasicSets(t *testing.T) {
 		t.Errorf("Expected %s to be %d, instead I got %d\n%+v", "width", 999, tc.max, b)
 	}
 
-	if tc.renderWithBlankState != true {
+	if !tc.renderWithBlankState {
 		t.Errorf("Expected %s to be %t, instead I got %t\n%+v", "renderWithBlankState", true, tc.renderWithBlankState, b)
 	}
 }

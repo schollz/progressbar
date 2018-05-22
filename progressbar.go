@@ -37,6 +37,7 @@ type config struct {
 	renderWithBlankState bool
 }
 
+// Theme defines the elements of the bar
 type Theme struct {
 	Saucer        string
 	SaucerPadding string
@@ -44,6 +45,7 @@ type Theme struct {
 	BarEnd        string
 }
 
+// Option is the type all options need to adhere to
 type Option func(p *ProgressBar)
 
 // OptionSetWidth sets the width of the bar
@@ -67,6 +69,7 @@ func OptionSetWriter(w io.Writer) Option {
 	}
 }
 
+// OptionSetRenderBlankState sets whether or not to render a 0% bar on construction
 func OptionSetRenderBlankState(r bool) Option {
 	return func(p *ProgressBar) {
 		p.config.renderWithBlankState = r
@@ -75,6 +78,7 @@ func OptionSetRenderBlankState(r bool) Option {
 
 var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
 
+// NewOptions constructs a new instance of ProgressBar, with any options you specify
 func NewOptions(max int, options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: getBlankState(),
@@ -112,6 +116,7 @@ func New(max int) *ProgressBar {
 	return NewOptions(max)
 }
 
+// RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return renderProgressBar(p.config, p.state)
 }
@@ -172,7 +177,7 @@ func renderProgressBar(c config, s state) error {
 	}
 
 	if f, ok := c.writer.(*os.File); ok {
-		f.Sync()
+		return f.Sync()
 	}
 
 	return nil
