@@ -22,8 +22,7 @@ func main() {
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	bar.Reset()
-	bar.SetWriter(os.Stderr)
+	bar = progressbar.NewOptions(1000, progressbar.OptionSetWriter(os.Stderr))
 	for i := 0; i < 1000; i++ {
 		bar.Add(1)
 		time.Sleep(5 * time.Millisecond)

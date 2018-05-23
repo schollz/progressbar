@@ -17,7 +17,7 @@ go get -u github.com/schollz/progressbar
 
 ## Usage 
 
-**Basic usage:**
+### Basic usage
 
 ```golang
 bar := progressbar.New(100)
@@ -30,10 +30,51 @@ for i := 0; i < 100; i++ {
 which looks like:
 
 ```bash
- 100% |████████████████████████████████████████| [1s:0s]            
+ 100% |████████████████████████████████████████| [1s:0s]
  ```
 
-The times at the end show the elapsed time and the remaining time, respectively. 
+The times at the end show the elapsed time and the remaining time, respectively.
+
+### Long running processes
+For long running processes, you might want to render from a 0% state.
+
+```golang
+// Renders the bar right on construction
+bar := progress.NewOptions(100, OptionSetRenderBlankState(true))
+```
+
+Alternatively, when you want to delay rendering, but still want to render a 0% state
+```golang
+bar := progress.NewOptions(100)
+
+// Render the current state, which is 0% in this case
+bar.RenderBlank()
+
+// Emulate work
+for i := 0; i < 10; i++ {
+    time.Sleep(10 * time.Minute)
+    bar.Add(10)
+}
+```
+
+### Use a custom writer
+The default writer is standard output (os.Stdout), but you can set it to whatever satisfies io.Writer.
+```golang
+bar := NewOptions(
+    10,
+    OptionSetTheme(Theme{Saucer: "#", SaucerPadding: "-", BarStart: ">", BarEnd: "<"}),
+    OptionSetWidth(10),
+    OptionSetWriter(&buf),
+)
+
+bar.Add(5)
+result := strings.TrimSpace(buf.String())
+
+// Result equals:
+// 50% >#####-----< [0s:0s]
+
+```
+
 
 ## Contributing
 
