@@ -85,6 +85,10 @@ Pull requests are welcome. Feel free to...
 - Fix bugs
 - Suggest improvements
 
+## Thanks
+
+Thanks [@Dynom](https://github.com/dynom) for massive improvements in version 2.0!
+
 ## License
 
 MIT
