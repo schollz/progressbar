@@ -1,1 +1,1 @@
-module github.com/schollz/progressbar
+module "github.com/schollz/progressbar"
