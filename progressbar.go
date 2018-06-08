@@ -35,11 +35,13 @@ type config struct {
 	writer               io.Writer
 	theme                Theme
 	renderWithBlankState bool
+	description          string
 }
 
 // Theme defines the elements of the bar
 type Theme struct {
 	Saucer        string
+	SaucerHead    string
 	SaucerPadding string
 	BarStart      string
 	BarEnd        string
@@ -73,6 +75,13 @@ func OptionSetWriter(w io.Writer) Option {
 func OptionSetRenderBlankState(r bool) Option {
 	return func(p *ProgressBar) {
 		p.config.renderWithBlankState = r
+	}
+}
+
+// OptionSetDescription sets the description of the bar to render in front of it
+func OptionSetDescription(description string) Option {
+	return func(p *ProgressBar) {
+		p.config.description = description
 	}
 }
 
@@ -162,10 +171,23 @@ func renderProgressBar(c config, s state) error {
 		leftTime = time.Since(s.startTime).Seconds() / float64(s.currentNum) * (float64(c.max) - float64(s.currentNum))
 	}
 
-	str := fmt.Sprintf("\r%4d%% %s%s%s%s [%s:%s]            ",
+	var saucer string
+	if s.currentSaucerSize > 0 {
+		saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
+		saucerHead := c.theme.SaucerHead
+		if saucerHead == "" || s.currentSaucerSize == c.width {
+			// use the saucer for the saucer head if it hasn't been set
+			// to preserve backwards compatibility
+			saucerHead = c.theme.Saucer
+		}
+		saucer += saucerHead
+	}
+
+	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s [%s:%s]            ",
+		c.description,
 		s.currentPercent,
 		c.theme.BarStart,
-		strings.Repeat(c.theme.Saucer, s.currentSaucerSize),
+		saucer,
 		strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
 		c.theme.BarEnd,
 		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
