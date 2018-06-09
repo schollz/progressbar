@@ -238,7 +238,7 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	// the width of the string, if printed to the console
 	// does not include the carriage return character
-	stringWidth := len(str) - 1
+	cleanString := strings.Replace(str, "\r", "", -1)
 
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
@@ -246,8 +246,13 @@ func renderProgressBar(c config, s state) (int, error) {
 
 		// the ANSI codes for the colors do not take up space in the console output,
 		// so they do not count towards the output string width
-		stringWidth = len(ansiRegex.ReplaceAllString(str, "")) - 1
+		cleanString = ansiRegex.ReplaceAllString(cleanString, "")
 	}
+
+	// get the amount of runes in the string instead of the
+	// character count of the string, as some runes span multiple characters.
+	// see https://stackoverflow.com/a/12668840/2733724
+	stringWidth := len([]rune(cleanString))
 
 	return stringWidth, writeString(c, str)
 }
