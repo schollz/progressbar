@@ -89,7 +89,7 @@ Pull requests are welcome. Feel free to...
 
 Thanks [@Dynom](https://github.com/dynom) for massive improvements in version 2.0!
 
-Thanks [@CrushedPixel](https://github.com/CrushedPixel) for adding descriptions!
+Thanks [@CrushedPixel](https://github.com/CrushedPixel) for adding descriptions and color code support!
 
 ## License
 

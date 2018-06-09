@@ -3,8 +3,10 @@ package progressbar
 import (
 	"errors"
 	"fmt"
+	"github.com/mitchellh/colorstring"
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +29,8 @@ type state struct {
 
 	lastShown time.Time
 	startTime time.Time
+
+	maxLineWidth int
 }
 
 type config struct {
@@ -36,6 +40,8 @@ type config struct {
 	theme                Theme
 	renderWithBlankState bool
 	description          string
+	// whether the output is expected to contain color codes
+	colorCodes bool
 }
 
 // Theme defines the elements of the bar
@@ -85,6 +91,14 @@ func OptionSetDescription(description string) Option {
 	}
 }
 
+// OptionEnableColorCodes enables or disables support for color codes
+// using mitchellh/colorstring
+func OptionEnableColorCodes(colorCodes bool) Option {
+	return func(p *ProgressBar) {
+		p.config.colorCodes = colorCodes
+	}
+}
+
 var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
 
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
@@ -127,7 +141,7 @@ func New(max int) *ProgressBar {
 
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
-	return renderProgressBar(p.config, p.state)
+	return p.render()
 }
 
 // Reset will reset the clock that is used
@@ -159,13 +173,41 @@ func (p *ProgressBar) Add(num int) error {
 	}
 
 	if updateBar {
-		return renderProgressBar(p.config, p.state)
+		return p.render()
 	}
 
 	return nil
 }
 
-func renderProgressBar(c config, s state) error {
+// Clear erases the progress bar from the current line
+func (p *ProgressBar) Clear() error {
+	return clearProgressBar(p.config, p.state)
+}
+
+// render renders the progress bar, updating the maximum
+// rendered line width. this function is not thread-safe,
+// so it must be called with an acquired lock.
+func (p *ProgressBar) render() error {
+	// first, clear the existing progress bar
+	err := clearProgressBar(p.config, p.state)
+
+	// then, re-render the current progress bar
+	w, err := renderProgressBar(p.config, p.state)
+	if err != nil {
+		return err
+	}
+
+	if w > p.state.maxLineWidth {
+		p.state.maxLineWidth = w
+	}
+
+	return nil
+}
+
+// regex matching ansi escape codes
+var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
+
+func renderProgressBar(c config, s state) (int, error) {
 	var leftTime float64
 	if s.currentNum > 0 {
 		leftTime = time.Since(s.startTime).Seconds() / float64(s.currentNum) * (float64(c.max) - float64(s.currentNum))
@@ -183,7 +225,7 @@ func renderProgressBar(c config, s state) error {
 		saucer += saucerHead
 	}
 
-	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s [%s:%s]            ",
+	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s [%s:%s]",
 		c.description,
 		s.currentPercent,
 		c.theme.BarStart,
@@ -193,13 +235,46 @@ func renderProgressBar(c config, s state) error {
 		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
 		(time.Duration(leftTime) * time.Second).String(),
 	)
-	_, err := io.WriteString(c.writer, str)
-	if err != nil {
+
+	// the width of the string, if printed to the console
+	// does not include the carriage return character
+	cleanString := strings.Replace(str, "\r", "", -1)
+
+	if c.colorCodes {
+		// convert any color codes in the progress bar into the respective ANSI codes
+		str = colorstring.Color(str)
+
+		// the ANSI codes for the colors do not take up space in the console output,
+		// so they do not count towards the output string width
+		cleanString = ansiRegex.ReplaceAllString(cleanString, "")
+	}
+
+	// get the amount of runes in the string instead of the
+	// character count of the string, as some runes span multiple characters.
+	// see https://stackoverflow.com/a/12668840/2733724
+	stringWidth := len([]rune(cleanString))
+
+	return stringWidth, writeString(c, str)
+}
+
+func clearProgressBar(c config, s state) error {
+	// fill the current line with enough spaces
+	// to overwrite the progress bar and jump
+	// back to the beginning of the line
+	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", s.maxLineWidth))
+	return writeString(c, str)
+}
+
+func writeString(c config, str string) error {
+	if _, err := io.WriteString(c.writer, str); err != nil {
 		return err
 	}
 
 	if f, ok := c.writer.(*os.File); ok {
-		return f.Sync()
+		// ignore any errors in Sync(), as stdout
+		// can't be synced on some operating systems
+		// like Debian 9 (Stretch)
+		f.Sync()
 	}
 
 	return nil
