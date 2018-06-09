@@ -236,14 +236,16 @@ func renderProgressBar(c config, s state) (int, error) {
 		(time.Duration(leftTime) * time.Second).String(),
 	)
 
+	if c.colorCodes {
+		// convert any color codes in the progress bar into the respective ANSI codes
+		str = colorstring.Color(str)
+	}
+
 	// the width of the string, if printed to the console
 	// does not include the carriage return character
 	cleanString := strings.Replace(str, "\r", "", -1)
 
 	if c.colorCodes {
-		// convert any color codes in the progress bar into the respective ANSI codes
-		str = colorstring.Color(str)
-
 		// the ANSI codes for the colors do not take up space in the console output,
 		// so they do not count towards the output string width
 		cleanString = ansiRegex.ReplaceAllString(cleanString, "")
