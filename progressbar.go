@@ -153,6 +153,14 @@ func (p *ProgressBar) Reset() {
 	p.state = getBlankState()
 }
 
+// Finish will fill the bar to full
+func (p *ProgressBar) Finish() error {
+	p.lock.Lock()
+	p.state.currentNum = p.config.max
+	p.lock.Unlock()
+	return p.Add(0)
+}
+
 // Add with increase the current count on the progress bar
 func (p *ProgressBar) Add(num int) error {
 	p.lock.Lock()
