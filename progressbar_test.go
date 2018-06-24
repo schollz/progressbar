@@ -16,6 +16,14 @@ func ExampleProgressBar() {
 	// 10% |█         | [1s:9s]
 }
 
+func ExampleFinish() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
+	bar.Reset()
+	bar.Finish()
+	// Output:
+	// 100% |██████████| [0s:0s]
+}
+
 func TestBar(t *testing.T) {
 	bar := New(0)
 	if err := bar.Add(1); err == nil {
