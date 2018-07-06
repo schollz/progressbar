@@ -30,7 +30,7 @@ func ExampleSetBytes() {
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
 	// Output:
-	// 10% |█         | (100.0 kB/s) [1s:9s]
+	// 10% |█         | (1.0 kB/s) [1s:9s]
 }
 
 func TestBar(t *testing.T) {
