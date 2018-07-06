@@ -30,6 +30,7 @@ func main() {
 	bar = progressbar.NewOptions(100,
 		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
 		progressbar.OptionEnableColorCodes(true),
+		progressbar.OptionSetBytes(10000),
 		progressbar.OptionSetWidth(15),
 		progressbar.OptionSetDescription("[cyan][1/3][reset] Writing moshable file..."),
 		progressbar.OptionSetTheme(progressbar.Theme{
@@ -41,7 +42,7 @@ func main() {
 		}))
 	for i := 0; i < 1000; i++ {
 		bar.Add(1)
-		time.Sleep(2 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond)
 	}
 
 }

@@ -3,13 +3,14 @@ package progressbar
 import (
 	"errors"
 	"fmt"
-	"github.com/mitchellh/colorstring"
 	"io"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/mitchellh/colorstring"
 )
 
 // ProgressBar is a thread-safe, simple
@@ -31,6 +32,7 @@ type state struct {
 	startTime time.Time
 
 	maxLineWidth int
+	currentBytes float64
 }
 
 type config struct {
@@ -42,6 +44,7 @@ type config struct {
 	description          string
 	// whether the output is expected to contain color codes
 	colorCodes bool
+	maxBytes   int
 }
 
 // Theme defines the elements of the bar
@@ -96,6 +99,13 @@ func OptionSetDescription(description string) Option {
 func OptionEnableColorCodes(colorCodes bool) Option {
 	return func(p *ProgressBar) {
 		p.config.colorCodes = colorCodes
+	}
+}
+
+// OptionSetBytes will also print the bytes/second
+func OptionSetBytes(maxBytes int) Option {
+	return func(p *ProgressBar) {
+		p.config.maxBytes = maxBytes
 	}
 }
 
@@ -175,6 +185,7 @@ func (p *ProgressBar) Add(num int) error {
 	p.state.currentPercent = int(percent * 100)
 	updateBar := p.state.currentPercent != p.state.lastPercent && p.state.currentPercent > 0
 
+	p.state.currentBytes = float64(percent) * float64(p.config.maxBytes)
 	p.state.lastPercent = p.state.currentPercent
 	if p.state.currentNum > p.config.max {
 		return errors.New("current number exceeds max")
@@ -233,13 +244,23 @@ func renderProgressBar(c config, s state) (int, error) {
 		saucer += saucerHead
 	}
 
-	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s [%s:%s]",
+	// add on bytes string if max bytes option was set
+	kbPerSecond := float64(s.currentBytes) / 1000.0 / time.Since(s.startTime).Seconds()
+	bytesString := ""
+	if kbPerSecond > 1000.0 {
+		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
+	} else if kbPerSecond > 0 {
+		bytesString = fmt.Sprintf("(%2.1f kB/s)", kbPerSecond)
+	}
+
+	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
 		c.description,
 		s.currentPercent,
 		c.theme.BarStart,
 		saucer,
 		strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
 		c.theme.BarEnd,
+		bytesString,
 		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
 		(time.Duration(leftTime) * time.Second).String(),
 	)

@@ -13,7 +13,7 @@ func ExampleProgressBar() {
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
 	// Output:
-	// 10% |█         | [1s:9s]
+	// 10% |█         |  [1s:9s]
 }
 
 func ExampleFinish() {
@@ -21,7 +21,16 @@ func ExampleFinish() {
 	bar.Reset()
 	bar.Finish()
 	// Output:
-	// 100% |██████████| [0s:0s]
+	// 100% |██████████|  [0s:0s]
+}
+
+func ExampleSetBytes() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	// Output:
+	// 10% |█         | (100.0 kB/s) [1s:9s]
 }
 
 func TestBar(t *testing.T) {
@@ -38,7 +47,7 @@ func TestBar(t *testing.T) {
 func ExampleProgressBar_RenderBlank() {
 	NewOptions(10, OptionSetWidth(10), OptionSetRenderBlankState(true))
 	// Output:
-	// 0% |          | [0s:0s]
+	// 0% |          |  [0s:0s]
 }
 
 func TestBasicSets(t *testing.T) {
@@ -76,7 +85,7 @@ func TestOptionSetTheme(t *testing.T) {
 
 	bar.Add(5)
 	result := strings.TrimSpace(buf.String())
-	expect := "50% >#####-----< [0s:0s]"
+	expect := "50% >#####-----<  [0s:0s]"
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
