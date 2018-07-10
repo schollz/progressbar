@@ -200,7 +200,8 @@ func (p *ProgressBar) Add(num int) error {
 		return errors.New("current number exceeds max")
 	}
 
-	if updateBar {
+	// always update if show bytes/second or its/second
+	if updateBar || p.config.showIterationsPerSecond || p.config.maxBytes > 0 {
 		return p.render()
 	}
 
