@@ -45,6 +45,8 @@ type config struct {
 	// whether the output is expected to contain color codes
 	colorCodes bool
 	maxBytes   int
+	// show the iterations per second
+	showIterationsPerSecond bool
 }
 
 // Theme defines the elements of the bar
@@ -106,6 +108,13 @@ func OptionEnableColorCodes(colorCodes bool) Option {
 func OptionSetBytes(maxBytes int) Option {
 	return func(p *ProgressBar) {
 		p.config.maxBytes = maxBytes
+	}
+}
+
+// OptionShowIts will also print the iterations/second
+func OptionShowIts() Option {
+	return func(p *ProgressBar) {
+		p.config.showIterationsPerSecond = true
 	}
 }
 
@@ -251,6 +260,11 @@ func renderProgressBar(c config, s state) (int, error) {
 		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
 	} else if kbPerSecond > 0 {
 		bytesString = fmt.Sprintf("(%2.1f kB/s)", kbPerSecond)
+	}
+
+	if c.showIterationsPerSecond {
+		// replace bytesString if used
+		bytesString = fmt.Sprintf("(%2.0f it/s)", float64(s.currentNum)/time.Since(s.startTime).Seconds())
 	}
 
 	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",

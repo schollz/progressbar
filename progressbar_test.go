@@ -33,6 +33,15 @@ func ExampleSetBytes() {
 	// 10% |█         | (1.0 kB/s) [1s:9s]
 }
 
+func ExampleSetIts() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	// Output:
+	// 10% |█         | (10 it/s) [1s:9s]
+}
+
 func TestBar(t *testing.T) {
 	bar := New(0)
 	if err := bar.Add(1); err == nil {
