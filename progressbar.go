@@ -19,7 +19,7 @@ type ProgressBar struct {
 	state  state
 	config config
 
-	lock sync.RWMutex
+	lock sync.Mutex
 }
 
 type state struct {
@@ -130,7 +130,6 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 			width:  40,
 			max:    max,
 		},
-		lock: sync.RWMutex{},
 	}
 
 	for _, o := range options {
