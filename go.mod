@@ -1,1 +1,1 @@
-module github.com/schollz/progressbar/v2
+module github.com/schollz/progressbar
