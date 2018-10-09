@@ -4,7 +4,7 @@ import (
 	"time"
 
 	ansi "github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar"
+	"github.com/schollz/progressbar/v2"
 )
 
 func main() {
