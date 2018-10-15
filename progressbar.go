@@ -22,6 +22,16 @@ type ProgressBar struct {
 	lock sync.Mutex
 }
 
+// State is the basic properties of the bar
+type State struct {
+	CurrentPercent float64
+	CurrentBytes   float64
+	MaxBytes       int
+	SecondsSince   float64
+	SecondsLeft    float64
+	KBsPerSecond   float64
+}
+
 type state struct {
 	currentNum        int
 	currentPercent    int
@@ -230,6 +240,22 @@ func (p *ProgressBar) render() error {
 	}
 
 	return nil
+}
+
+// State returns the current state
+func (p *ProgressBar) State() State {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	s := State{}
+	s.CurrentPercent = float64(p.state.currentNum) / float64(p.config.max)
+	s.CurrentBytes = p.state.currentBytes
+	s.MaxBytes = p.config.maxBytes
+	s.SecondsSince = time.Since(p.state.startTime).Seconds()
+	if p.state.currentNum > 0 {
+		s.SecondsLeft = s.SecondsSince / float64(p.state.currentNum) * (float64(p.config.max) - float64(p.state.currentNum))
+	}
+	s.KBsPerSecond = float64(p.state.currentBytes) / 1000.0 / s.SecondsSince
+	return s
 }
 
 // regex matching ansi escape codes

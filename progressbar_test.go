@@ -53,6 +53,17 @@ func TestBar(t *testing.T) {
 	}
 }
 
+func TestState(t *testing.T) {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	s := bar.State()
+	if s.CurrentPercent != 0.1 {
+		t.Error(s)
+	}
+}
+
 func ExampleProgressBar_RenderBlank() {
 	NewOptions(10, OptionSetWidth(10), OptionSetRenderBlankState(true))
 	// Output:
