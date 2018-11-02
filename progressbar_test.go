@@ -16,6 +16,16 @@ func ExampleProgressBar() {
 	// 10% |█         |  [1s:9s]
 }
 
+func ExampleThrottle() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionThrottle(100*time.Millisecond))
+	bar.Reset()
+	bar.Add(5)
+	time.Sleep(150 * time.Millisecond)
+	bar.Add(5)
+	bar.Add(10)
+	// Output:
+	// 10% |█         |  [0s:1s]
+}
 func ExampleFinish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()
@@ -102,7 +112,6 @@ func TestOptionSetTheme(t *testing.T) {
 		OptionSetWidth(10),
 		OptionSetWriter(&buf),
 	)
-
 	bar.Add(5)
 	result := strings.TrimSpace(buf.String())
 	expect := "50% >#####-----<  [0s:0s]"

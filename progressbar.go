@@ -57,6 +57,9 @@ type config struct {
 	maxBytes   int
 	// show the iterations per second
 	showIterationsPerSecond bool
+
+	// minimum time to wait in between updates
+	throttleDuration time.Duration
 }
 
 // Theme defines the elements of the bar
@@ -128,6 +131,13 @@ func OptionShowIts() Option {
 	}
 }
 
+// OptionShowIts will also print the iterations/second
+func OptionThrottle(duration time.Duration) Option {
+	return func(p *ProgressBar) {
+		p.config.throttleDuration = duration
+	}
+}
+
 var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
 
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
@@ -135,10 +145,11 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: getBlankState(),
 		config: config{
-			writer: os.Stdout,
-			theme:  defaultTheme,
-			width:  40,
-			max:    max,
+			writer:           os.Stdout,
+			theme:            defaultTheme,
+			width:            40,
+			max:              max,
+			throttleDuration: 0 * time.Nanosecond,
 		},
 	}
 
@@ -226,8 +237,16 @@ func (p *ProgressBar) Clear() error {
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
 func (p *ProgressBar) render() error {
+	// make sure that the rendering is not happening too quickly
+	if time.Since(p.state.lastShown).Nanoseconds() < p.config.throttleDuration.Nanoseconds() {
+		return nil
+	}
+
 	// first, clear the existing progress bar
 	err := clearProgressBar(p.config, p.state)
+	if err != nil {
+		return err
+	}
 
 	// then, re-render the current progress bar
 	w, err := renderProgressBar(p.config, p.state)
@@ -238,6 +257,8 @@ func (p *ProgressBar) render() error {
 	if w > p.state.maxLineWidth {
 		p.state.maxLineWidth = w
 	}
+
+	p.state.lastShown = time.Now()
 
 	return nil
 }

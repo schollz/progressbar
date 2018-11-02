@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	ansi "github.com/k0kubun/go-ansi"
@@ -17,15 +18,16 @@ func main() {
 		time.Sleep(2 * time.Millisecond)
 	}
 
-	// // bar with options
-	// bar = progressbar.NewOptions(1000,
-	// 	progressbar.OptionSetWriter(os.Stderr),
-	// 	progressbar.OptionSetTheme(progressbar.Theme{Saucer: "~", SaucerPadding: "-", BarStart: "|", BarEnd: "|"}),
-	// )
-	// for i := 0; i < 1000; i++ {
-	// 	bar.Add(1)
-	// 	time.Sleep(2 * time.Millisecond)
-	// }
+	// bar with options
+	bar = progressbar.NewOptions(1000,
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionSetTheme(progressbar.Theme{Saucer: "~", SaucerPadding: "-", BarStart: "|", BarEnd: "|"}),
+		progressbar.OptionThrottle(100*time.Millisecond),
+	)
+	for i := 0; i < 1000; i++ {
+		bar.Add(1)
+		time.Sleep(2 * time.Millisecond)
+	}
 
 	bar = progressbar.NewOptions(100,
 		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
