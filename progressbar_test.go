@@ -8,6 +8,12 @@ import (
 )
 
 func ExampleProgressBar() {
+	bar := New(100)
+	bar.Add(10)
+	// Output:
+	// 10% |████                                    |  [0s:0s]
+}
+func ExampleProgressBarBasic() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
