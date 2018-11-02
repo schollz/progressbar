@@ -239,7 +239,9 @@ func (p *ProgressBar) Clear() error {
 // so it must be called with an acquired lock.
 func (p *ProgressBar) render() error {
 	// make sure that the rendering is not happening too quickly
-	if time.Since(p.state.lastShown).Nanoseconds() < p.config.throttleDuration.Nanoseconds() {
+	// but always show if the currentNum reaches the max
+	if time.Since(p.state.lastShown).Nanoseconds() < p.config.throttleDuration.Nanoseconds() &&
+		p.state.currentNum < p.config.max {
 		return nil
 	}
 
