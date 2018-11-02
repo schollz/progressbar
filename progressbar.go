@@ -131,7 +131,8 @@ func OptionShowIts() Option {
 	}
 }
 
-// OptionShowIts will also print the iterations/second
+// OptionThrottle will wait the specified duration before updating again. The default
+// duration is 0 seconds.
 func OptionThrottle(duration time.Duration) Option {
 	return func(p *ProgressBar) {
 		p.config.throttleDuration = duration
