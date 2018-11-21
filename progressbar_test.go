@@ -49,6 +49,15 @@ func ExampleSetBytes() {
 	// 10% |█         | (1.0 kB/s) [1s:9s]
 }
 
+func ExampleShowCount() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionShowCount())
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	// Output:
+	// 10% |█         | (10/100, 10 it/s) [1s:9s]
+}
+
 func ExampleSetIts() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
 	bar.Reset()

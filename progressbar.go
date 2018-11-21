@@ -57,6 +57,7 @@ type config struct {
 	maxBytes   int
 	// show the iterations per second
 	showIterationsPerSecond bool
+	showIterationsCount     bool
 
 	// minimum time to wait in between updates
 	throttleDuration time.Duration
@@ -121,6 +122,13 @@ func OptionEnableColorCodes(colorCodes bool) Option {
 func OptionSetBytes(maxBytes int) Option {
 	return func(p *ProgressBar) {
 		p.config.maxBytes = maxBytes
+	}
+}
+
+// OptionShowCount will also print current count out of total
+func OptionShowCount() Option {
+	return func(p *ProgressBar) {
+		p.config.showIterationsCount = true
 	}
 }
 
@@ -312,9 +320,13 @@ func renderProgressBar(c config, s state) (int, error) {
 		bytesString = fmt.Sprintf("(%2.1f kB/s)", kbPerSecond)
 	}
 
-	if c.showIterationsPerSecond {
+	if c.showIterationsPerSecond && !c.showIterationsCount {
 		// replace bytesString if used
 		bytesString = fmt.Sprintf("(%2.0f it/s)", float64(s.currentNum)/time.Since(s.startTime).Seconds())
+	} else if !c.showIterationsPerSecond && c.showIterationsCount {
+		bytesString = fmt.Sprintf("(%d/%d)", s.currentNum, c.max)
+	} else if c.showIterationsPerSecond && c.showIterationsCount {
+		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, float64(s.currentNum)/time.Since(s.startTime).Seconds())
 	}
 
 	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
