@@ -40,12 +40,12 @@ For long running processes, you might want to render from a 0% state.
 
 ```golang
 // Renders the bar right on construction
-bar := progress.NewOptions(100, OptionSetRenderBlankState(true))
+bar := progressbar.NewOptions(100, progressbar.OptionSetRenderBlankState(true))
 ```
 
 Alternatively, when you want to delay rendering, but still want to render a 0% state
 ```golang
-bar := progress.NewOptions(100)
+bar := progressbar.NewOptions(100)
 
 // Render the current state, which is 0% in this case
 bar.RenderBlank()
