@@ -210,14 +210,14 @@ func (p *ProgressBar) Finish() error {
 }
 
 // Add with increase the current count on the progress bar
-func (p *ProgressBar) Add(num int) error {
+func (p *ProgressBar) Set(num int) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
 	if p.config.max == 0 {
 		return errors.New("max must be greater than 0")
 	}
-	p.state.currentNum += num
+	p.state.currentNum = num
 	percent := float64(p.state.currentNum) / float64(p.config.max)
 	p.state.currentSaucerSize = int(percent * float64(p.config.width))
 	p.state.currentPercent = int(percent * 100)
@@ -235,6 +235,10 @@ func (p *ProgressBar) Add(num int) error {
 	}
 
 	return nil
+}
+
+func (p *ProgressBar) Add(num int) error {
+	return p.Set(p.state.currentNum + num)
 }
 
 // Clear erases the progress bar from the current line
