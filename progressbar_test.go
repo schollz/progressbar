@@ -1,10 +1,19 @@
 package progressbar
 
 import (
+	"bufio"
+	"bytes"
+	"crypto/md5"
+	"encoding/hex"
+	"io"
 	"io/ioutil"
+	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func ExampleProgressBar() {
@@ -133,4 +142,77 @@ func TestOptionSetTheme(t *testing.T) {
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
+}
+
+func TestReaderToBuffer(t *testing.T) {
+	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+	req, err := http.NewRequest("GET", urlToGet, nil)
+	assert.Nil(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+
+	var out io.Writer
+	/// setup buffer
+	var buf bytes.Buffer
+	f := bufio.NewWriter(&buf)
+	out = f
+
+	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
+	out = io.MultiWriter(out, bar)
+	_, err = io.Copy(out, resp.Body)
+	assert.Nil(t, err)
+
+	// if reading to buffer, write buffer bytes
+	f.Flush()
+	err = ioutil.WriteFile("croc_v4.1.4_Windows-64bit_GUI.zip", buf.Bytes(), 0644)
+	assert.Nil(t, err)
+
+	md5, err := md5sum("croc_v4.1.4_Windows-64bit_GUI.zip")
+	assert.Nil(t, err)
+	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
+	assert.Nil(t, os.Remove("croc_v4.1.4_Windows-64bit_GUI.zip"))
+}
+
+func TestReaderToFile(t *testing.T) {
+	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+	req, err := http.NewRequest("GET", urlToGet, nil)
+	assert.Nil(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+
+	var out io.Writer
+	// read to file
+	f, err := os.OpenFile("croc_v4.1.4_Windows-64bit_GUI.zip", os.O_CREATE|os.O_WRONLY, 0666)
+	assert.Nil(t, err)
+	out = f
+
+	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
+	out = io.MultiWriter(out, bar)
+	_, err = io.Copy(out, resp.Body)
+	assert.Nil(t, err)
+	f.Close()
+
+	md5, err := md5sum("croc_v4.1.4_Windows-64bit_GUI.zip")
+	assert.Nil(t, err)
+	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
+	assert.Nil(t, os.Remove("croc_v4.1.4_Windows-64bit_GUI.zip"))
+}
+
+func md5sum(filePath string) (result string, err error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	hash := md5.New()
+	_, err = io.Copy(hash, file)
+	if err != nil {
+		return
+	}
+
+	result = hex.EncodeToString(hash.Sum(nil))
+	return
 }

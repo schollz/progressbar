@@ -2,7 +2,7 @@
 
 [![travis](https://travis-ci.org/schollz/progressbar.svg?branch=master)](https://travis-ci.org/schollz/progressbar) 
 [![go report card](https://goreportcard.com/badge/github.com/schollz/progressbar)](https://goreportcard.com/report/github.com/schollz/progressbar) 
-[![coverage](https://img.shields.io/badge/coverage-89%25-brightgreen.svg)](https://gocover.io/github.com/schollz/progressbar)
+[![coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](https://gocover.io/github.com/schollz/progressbar)
 [![godocs](https://godoc.org/github.com/schollz/progressbar?status.svg)](https://godoc.org/github.com/schollz/progressbar) 
 
 A very simple thread-safe progress bar which should work on every OS without problems. I needed a progressbar for [croc](https://github.com/schollz/croc) and everything I tried had problems, so I made another one.
@@ -36,6 +36,7 @@ which looks like:
 The times at the end show the elapsed time and the remaining time, respectively.
 
 ### Long running processes
+
 For long running processes, you might want to render from a 0% state.
 
 ```golang
@@ -58,6 +59,7 @@ for i := 0; i < 10; i++ {
 ```
 
 ### Use a custom writer
+
 The default writer is standard output (os.Stdout), but you can set it to whatever satisfies io.Writer.
 ```golang
 bar := NewOptions(
@@ -75,6 +77,30 @@ result := strings.TrimSpace(buf.String())
 
 ```
 
+### Progress for I/O operations
+
+The `progressbar` implements an `io.Writer` so it can automatically detect the number of bytes written to a stream, so you can use it as a progressbar for an `io.Reader`.
+
+```golang
+urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+req, _ := http.NewRequest("GET", urlToGet, nil)
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+var out io.Writer
+f, _ := os.OpenFile("croc_v4.1.4_Windows-64bit_GUI.zip", os.O_CREATE|os.O_WRONLY, 0644)
+out = f
+defer f.Close()
+
+bar := progressbar.NewOptions(
+    int(resp.ContentLength), 
+    progressbar.OptionSetBytes(int(resp.ContentLength)),
+)
+out = io.MultiWriter(out, bar)
+io.Copy(out, resp.Body)
+```
+
+See the tests for another example.
 
 ## Contributing
 
