@@ -216,3 +216,13 @@ func md5sum(filePath string) (result string, err error) {
 	result = hex.EncodeToString(hash.Sum(nil))
 	return
 }
+
+func ExampleDescribe() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Describe("performing axial adjustements")
+	bar.Add(10)
+	// Output:
+	// performing axial adjustements  10% |█         |  [1s:9s]
+}

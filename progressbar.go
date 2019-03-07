@@ -265,6 +265,12 @@ func (p *ProgressBar) Clear() error {
 	return clearProgressBar(p.config, p.state)
 }
 
+// Describe will change the description shown before the progress, which
+// can be changed on the fly (as for a slow running process).
+func (p *ProgressBar) Describe(description string) {
+	p.config.description = description
+}
+
 // render renders the progress bar, updating the maximum
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
