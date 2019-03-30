@@ -43,6 +43,8 @@ type state struct {
 
 	maxLineWidth int
 	currentBytes float64
+
+	finished bool
 }
 
 type config struct {
@@ -286,6 +288,12 @@ func (p *ProgressBar) render() error {
 	err := clearProgressBar(p.config, p.state)
 	if err != nil {
 		return err
+	}
+
+	// if the progressbar is finished, return
+	if p.state.finished || p.state.currentNum >= p.config.max {
+		p.state.finished = true
+		return nil
 	}
 
 	// then, re-render the current progress bar

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -17,6 +18,7 @@ func main() {
 		bar.Add(1)
 		time.Sleep(2 * time.Millisecond)
 	}
+	fmt.Println("finished1")
 
 	// bar with options
 	bar = progressbar.NewOptions(1000,
@@ -28,6 +30,7 @@ func main() {
 		bar.Add(1)
 		time.Sleep(2 * time.Millisecond)
 	}
+	fmt.Println("finished2")
 
 	bar = progressbar.NewOptions(100,
 		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
@@ -46,5 +49,7 @@ func main() {
 		bar.Add(1)
 		time.Sleep(10 * time.Millisecond)
 	}
+
+	fmt.Println("finished3")
 
 }

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -45,8 +46,9 @@ func ExampleFinish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	bar.Finish()
+	fmt.Println("Finished")
 	// Output:
-	// 100% |██████████|  [0s:0s]
+	// Finished
 }
 
 func ExampleSetBytes() {
