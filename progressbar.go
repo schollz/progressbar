@@ -63,6 +63,9 @@ type config struct {
 
 	// minimum time to wait in between updates
 	throttleDuration time.Duration
+
+	// clear bar once finished
+	clearOnFinish bool
 }
 
 // Theme defines the elements of the bar
@@ -151,6 +154,13 @@ func OptionShowIts() Option {
 func OptionThrottle(duration time.Duration) Option {
 	return func(p *ProgressBar) {
 		p.config.throttleDuration = duration
+	}
+}
+
+// OptionClearOnFinish will clear the bar once its finished
+func OptionClearOnFinish() Option {
+	return func(p *ProgressBar) {
+		p.config.clearOnFinish = true
 	}
 }
 
@@ -290,10 +300,13 @@ func (p *ProgressBar) render() error {
 		return err
 	}
 
-	// if the progressbar is finished, return
+	// check if the progress bar is finished
 	if p.state.finished || p.state.currentNum >= p.config.max {
 		p.state.finished = true
-		return nil
+		if p.config.clearOnFinish {
+			// if the progressbar is finished, return
+			return nil
+		}
 	}
 
 	// then, re-render the current progress bar
