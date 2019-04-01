@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -42,11 +43,20 @@ func ExampleThrottle() {
 	// 10% |█         |  [0s:1s]
 }
 func ExampleFinish() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionClearOnFinish())
+	bar.Reset()
+	bar.Finish()
+	fmt.Println("Finished")
+	// Output:
+	// Finished
+}
+func ExampleFinish2() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	bar.Finish()
+	fmt.Println("Finished")
 	// Output:
-	// 100% |██████████|  [0s:0s]
+	// 100% |██████████|  [0s:0s]Finished
 }
 
 func ExampleSetBytes() {
