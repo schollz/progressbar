@@ -66,6 +66,8 @@ type config struct {
 
 	// clear bar once finished
 	clearOnFinish bool
+
+	onCompletion func()
 }
 
 // Theme defines the elements of the bar
@@ -161,6 +163,12 @@ func OptionThrottle(duration time.Duration) Option {
 func OptionClearOnFinish() Option {
 	return func(p *ProgressBar) {
 		p.config.clearOnFinish = true
+	}
+}
+
+func OptionOnCompletion(cmpl func()) Option {
+	return func(p *ProgressBar) {
+		p.config.onCompletion = cmpl
 	}
 }
 
@@ -302,6 +310,13 @@ func (p *ProgressBar) render() error {
 
 	// check if the progress bar is finished
 	if p.state.finished || p.state.currentNum >= p.config.max {
+		if p.config.onCompletion != nil {
+			if !p.state.finished {
+				renderProgressBar(p.config, p.state)
+				p.config.onCompletion()
+			}
+			return nil
+		}
 		p.state.finished = true
 		if p.config.clearOnFinish {
 			// if the progressbar is finished, return

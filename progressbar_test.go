@@ -236,3 +236,15 @@ func ExampleDescribe() {
 	// Output:
 	// performing axial adjustements  10% |█         |  [1s:9s]
 }
+
+// func ExampleOnCompletion() {
+// 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false),
+// 		OptionOnCompletion(func() {
+// 			fmt.Print(" done!")
+// 		}))
+// 	bar.Describe("test")
+// 	bar.Add(50)
+// 	bar.Add(50)
+// 	// Output:
+// 	// test 100% |██████████|  [0s:0s] done!
+// }
