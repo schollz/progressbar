@@ -46,17 +46,16 @@ func ExampleFinish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionClearOnFinish())
 	bar.Reset()
 	bar.Finish()
+	bar.Finish()
 	fmt.Println("Finished")
 	// Output:
 	// Finished
 }
 func ExampleFinish2() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
-	bar.Reset()
 	bar.Finish()
-	fmt.Println("Finished")
 	// Output:
-	// 100% |██████████|  [0s:0s]Finished
+	// 100% |██████████|  [0s:0s]
 }
 
 func ExampleSetBytes() {
@@ -236,15 +235,3 @@ func ExampleDescribe() {
 	// Output:
 	// performing axial adjustements  10% |█         |  [1s:9s]
 }
-
-// func ExampleOnCompletion() {
-// 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false),
-// 		OptionOnCompletion(func() {
-// 			fmt.Print(" done!")
-// 		}))
-// 	bar.Describe("test")
-// 	bar.Add(50)
-// 	bar.Add(50)
-// 	// Output:
-// 	// test 100% |██████████|  [0s:0s] done!
-// }

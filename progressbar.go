@@ -309,19 +309,18 @@ func (p *ProgressBar) render() error {
 	}
 
 	// check if the progress bar is finished
-	if p.state.finished || p.state.currentNum >= p.config.max {
-		if p.config.onCompletion != nil {
-			if !p.state.finished {
-				renderProgressBar(p.config, p.state)
-				p.config.onCompletion()
-			}
-			return nil
-		}
+	if !p.state.finished && p.state.currentNum >= p.config.max {
 		p.state.finished = true
-		if p.config.clearOnFinish {
-			// if the progressbar is finished, return
-			return nil
+		if !p.config.clearOnFinish {
+			renderProgressBar(p.config, p.state)
 		}
+
+		if p.config.onCompletion != nil {
+			p.config.onCompletion()
+		}
+	}
+	if p.state.finished {
+		return nil
 	}
 
 	// then, re-render the current progress bar
