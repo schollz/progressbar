@@ -233,6 +233,9 @@ func (p *ProgressBar) Reset() {
 
 // Finish will fill the bar to full
 func (p *ProgressBar) Finish() error {
+	if p == nil {
+		return fmt.Errorf("progressbar is nil")
+	}
 	p.lock.Lock()
 	p.state.currentNum = p.config.max
 	p.lock.Unlock()
