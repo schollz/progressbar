@@ -281,10 +281,12 @@ func (p *ProgressBar) Set64(num int64) error {
 	return nil
 }
 
+// Add will add the specified amount to the progressbar
 func (p *ProgressBar) Add(num int) error {
 	return p.Add64(int64(num))
 }
 
+// Add64 will add the specified amount to the progressbar
 func (p *ProgressBar) Add64(num int64) error {
 	return p.Set64(p.state.currentNum + num)
 }
@@ -466,6 +468,8 @@ type Reader struct {
 	bar *ProgressBar
 }
 
+
+// Read will read the data and add the number of bytes to the progressbar
 func (r *Reader) Read(p []byte) (n int, err error) {
 	n, err = r.Reader.Read(p)
 	r.bar.Add(n)
