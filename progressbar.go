@@ -217,6 +217,12 @@ func New(max int) *ProgressBar {
 	return NewOptions(max)
 }
 
+// New64 returns a new ProgressBar
+// with the specified maximum
+func New64(max int64) *ProgressBar {
+	return NewOptions64(max)
+}
+
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return p.render()
