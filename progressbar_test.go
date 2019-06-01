@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -207,6 +208,26 @@ func TestReaderToFile(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
 	assert.Nil(t, os.Remove("croc_v4.1.4_Windows-64bit_GUI.zip"))
+}
+
+func TestConcurrency(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(
+		1000,
+		OptionSetWriter(&buf),
+	)
+	var wg sync.WaitGroup
+	for i := 0; i < 900; i++ {
+		wg.Add(1)
+		go func(b *ProgressBar, wg *sync.WaitGroup) {
+			bar.Add(1)
+			wg.Done()
+		}(bar, &wg)
+	}
+	wg.Wait()
+	result := bar.state.currentNum
+	expect := int64(900)
+	assert.Equal(t, expect, result)
 }
 
 func md5sum(filePath string) (result string, err error) {

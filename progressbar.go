@@ -248,20 +248,20 @@ func (p *ProgressBar) Finish() error {
 	return p.Add(0)
 }
 
-// Add with increase the current count on the progress bar
-func (p *ProgressBar) Set(num int) error {
-	return p.Set64(int64(num))
+// Add will add the specified amount to the progressbar
+func (p *ProgressBar) Add(num int) error {
+	return p.Add64(int64(num))
 }
 
-// Add with increase the current count on the progress bar
-func (p *ProgressBar) Set64(num int64) error {
+// Add64 will add the specified amount to the progressbar
+func (p *ProgressBar) Add64(num int64) error {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
 	if p.config.max == 0 {
 		return errors.New("max must be greater than 0")
 	}
-	p.state.currentNum = num
+	p.state.currentNum += num
 	percent := float64(p.state.currentNum) / float64(p.config.max)
 	p.state.currentSaucerSize = int(percent * float64(p.config.width))
 	p.state.currentPercent = int(percent * 100)
@@ -279,16 +279,6 @@ func (p *ProgressBar) Set64(num int64) error {
 	}
 
 	return nil
-}
-
-// Add will add the specified amount to the progressbar
-func (p *ProgressBar) Add(num int) error {
-	return p.Add64(int64(num))
-}
-
-// Add64 will add the specified amount to the progressbar
-func (p *ProgressBar) Add64(num int64) error {
-	return p.Set64(p.state.currentNum + num)
 }
 
 // Clear erases the progress bar from the current line
@@ -467,7 +457,6 @@ type Reader struct {
 	io.Reader
 	bar *ProgressBar
 }
-
 
 // Read will read the data and add the number of bytes to the progressbar
 func (r *Reader) Read(p []byte) (n int, err error) {
