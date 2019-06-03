@@ -38,8 +38,10 @@ type state struct {
 	lastPercent       int
 	currentSaucerSize int
 
-	lastShown time.Time
-	startTime time.Time
+	lastShown           time.Time
+	startTime           time.Time
+	counterTime         time.Time
+	counterNumSinceLast int64
 
 	maxLineWidth int
 	currentBytes float64
@@ -206,8 +208,9 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 func getBlankState() state {
 	now := time.Now()
 	return state{
-		startTime: now,
-		lastShown: now,
+		startTime:   now,
+		lastShown:   now,
+		counterTime: now,
 	}
 }
 
@@ -262,6 +265,14 @@ func (p *ProgressBar) Add64(num int64) error {
 		return errors.New("max must be greater than 0")
 	}
 	p.state.currentNum += num
+
+	// reset the countdown timer every 10 seconds
+	p.state.counterNumSinceLast += num
+	if time.Since(p.state.counterTime).Seconds() > 10 {
+		p.state.counterTime = time.Now()
+		p.state.counterNumSinceLast = 0
+	}
+
 	percent := float64(p.state.currentNum) / float64(p.config.max)
 	p.state.currentSaucerSize = int(percent * float64(p.config.width))
 	p.state.currentPercent = int(percent * 100)
@@ -360,8 +371,8 @@ var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
 func renderProgressBar(c config, s state) (int, error) {
 	var leftTime float64
-	if s.currentNum > 0 {
-		leftTime = time.Since(s.startTime).Seconds() / float64(s.currentNum) * (float64(c.max) - float64(s.currentNum))
+	if s.counterNumSinceLast > 0 {
+		leftTime = time.Since(s.counterTime).Seconds() / float64(s.counterNumSinceLast) * (float64(c.max) - float64(s.currentNum))
 	}
 
 	var saucer string
