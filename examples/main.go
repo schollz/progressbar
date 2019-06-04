@@ -2,19 +2,45 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"time"
 
-	ansi "github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v2"
+	"github.com/k0kubun/go-ansi"
+	"github.com/schollz/progressbar"
 )
 
 func main() {
+
+	urlToGet := "https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz"
+	req, _ := http.NewRequest("GET", urlToGet, nil)
+	resp, _ := http.DefaultClient.Do(req)
+	defer resp.Body.Close()
+
+	var out io.Writer
+	f, _ := os.OpenFile("go1.12.5.linux-amd64.tar.gz", os.O_CREATE|os.O_WRONLY, 0644)
+	out = f
+	defer f.Close()
+
+	bar := progressbar.NewOptions(
+		int(resp.ContentLength),
+		progressbar.OptionSetBytes(int(resp.ContentLength)),
+	)
+	out = io.MultiWriter(out, bar)
+	io.Copy(out, resp.Body)
+
 	// basic bar
-	bar := progressbar.New(1000)
+	bar = progressbar.NewOptions(10000,
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionSetTheme(progressbar.Theme{Saucer: "~", SaucerPadding: "-", BarStart: "|", BarEnd: "|"}),
+		progressbar.OptionThrottle(100*time.Millisecond),
+		progressbar.OptionShowIts(),
+	)
 	bar.RenderBlank() // will show the progress bar
+	bar.Add(3000)
 	time.Sleep(1 * time.Second)
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 7000; i++ {
 		bar.Add(1)
 		time.Sleep(2 * time.Millisecond)
 	}
@@ -25,6 +51,7 @@ func main() {
 		progressbar.OptionSetWriter(os.Stderr),
 		progressbar.OptionSetTheme(progressbar.Theme{Saucer: "~", SaucerPadding: "-", BarStart: "|", BarEnd: "|"}),
 		progressbar.OptionThrottle(100*time.Millisecond),
+		progressbar.OptionShowIts(),
 	)
 	for i := 0; i < 1000; i++ {
 		bar.Add(1)
@@ -49,7 +76,5 @@ func main() {
 		bar.Add(1)
 		time.Sleep(10 * time.Millisecond)
 	}
-
 	fmt.Println("finished3")
-
 }
