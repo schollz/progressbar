@@ -12,7 +12,8 @@ import (
 )
 
 func main() {
-
+	fmt.Println("downloading go1.12.5.linux-amd64.tar.gz")
+	defer os.Remove("go1.12.5.linux-amd64.tar.gz")
 	urlToGet := "https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz"
 	req, _ := http.NewRequest("GET", urlToGet, nil)
 	resp, _ := http.DefaultClient.Do(req)
@@ -26,9 +27,11 @@ func main() {
 	bar := progressbar.NewOptions(
 		int(resp.ContentLength),
 		progressbar.OptionSetBytes(int(resp.ContentLength)),
+		progressbar.OptionThrottle(10*time.Millisecond),
 	)
 	out = io.MultiWriter(out, bar)
 	io.Copy(out, resp.Body)
+	fmt.Println("done")
 
 	// basic bar
 	bar = progressbar.NewOptions(10000,

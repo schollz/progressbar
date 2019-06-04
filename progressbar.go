@@ -272,7 +272,7 @@ func (p *ProgressBar) Add64(num int64) error {
 	p.state.counterNumSinceLast += num
 	if time.Since(p.state.counterTime).Seconds() > 1 && time.Since(p.state.counterTime).Seconds() > 0 {
 		p.state.counterLastTenRates = append(p.state.counterLastTenRates, float64(p.state.counterNumSinceLast)/time.Since(p.state.counterTime).Seconds())
-		if len(p.state.counterLastTenRates) > 5 {
+		if len(p.state.counterLastTenRates) > 10 {
 			p.state.counterLastTenRates = p.state.counterLastTenRates[1:]
 		}
 		p.state.counterTime = time.Now()
