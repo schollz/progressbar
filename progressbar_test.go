@@ -19,10 +19,10 @@ import (
 )
 
 func BenchmarkRender(b *testing.B) {
-	bar := NewOptions(100000,
+	bar := NewOptions64(100000000,
 		OptionSetWriter(os.Stderr),
-		OptionThrottle(100*time.Millisecond),
 		OptionShowIts(),
+		OptionSetBytes(100000000),
 	)
 	for i := 0; i < b.N; i++ {
 		bar.Add(1)
