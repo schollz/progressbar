@@ -41,6 +41,10 @@ type state struct {
 	lastShown time.Time
 	startTime time.Time
 
+	counterTime         time.Time
+	counterNumSinceLast int64
+	counterLastTenRates []float64
+
 	maxLineWidth int
 	currentBytes float64
 
@@ -206,8 +210,9 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 func getBlankState() state {
 	now := time.Now()
 	return state{
-		startTime: now,
-		lastShown: now,
+		startTime:   now,
+		lastShown:   now,
+		counterTime: now,
 	}
 }
 
@@ -262,6 +267,18 @@ func (p *ProgressBar) Add64(num int64) error {
 		return errors.New("max must be greater than 0")
 	}
 	p.state.currentNum += num
+
+	// reset the countdown timer every second to take rolling average
+	p.state.counterNumSinceLast += num
+	if time.Since(p.state.counterTime).Seconds() > 0.5 && time.Since(p.state.counterTime).Seconds() > 0 {
+		p.state.counterLastTenRates = append(p.state.counterLastTenRates, float64(p.state.counterNumSinceLast)/time.Since(p.state.counterTime).Seconds())
+		if len(p.state.counterLastTenRates) > 10 {
+			p.state.counterLastTenRates = p.state.counterLastTenRates[1:]
+		}
+		p.state.counterTime = time.Now()
+		p.state.counterNumSinceLast = 0
+	}
+
 	percent := float64(p.state.currentNum) / float64(p.config.max)
 	p.state.currentSaucerSize = int(percent * float64(p.config.width))
 	p.state.currentPercent = int(percent * 100)
@@ -359,9 +376,9 @@ func (p *ProgressBar) State() State {
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
 func renderProgressBar(c config, s state) (int, error) {
-	var leftTime float64
-	if s.currentNum > 0 {
-		leftTime = time.Since(s.startTime).Seconds() / float64(s.currentNum) * (float64(c.max) - float64(s.currentNum))
+	averageRate := average(s.counterLastTenRates)
+	if len(s.counterLastTenRates) == 0 {
+		averageRate = float64(s.currentNum) / time.Since(s.startTime).Seconds()
 	}
 
 	var saucer string
@@ -377,7 +394,7 @@ func renderProgressBar(c config, s state) (int, error) {
 	}
 
 	// add on bytes string if max bytes option was set
-	kbPerSecond := float64(s.currentBytes) / 1000.0 / time.Since(s.startTime).Seconds()
+	kbPerSecond := averageRate / float64(c.max) * float64(c.maxBytes) / 1000.0
 	bytesString := ""
 	if kbPerSecond > 1000.0 {
 		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
@@ -387,11 +404,11 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	if c.showIterationsPerSecond && !c.showIterationsCount {
 		// replace bytesString if used
-		bytesString = fmt.Sprintf("(%2.0f it/s)", float64(s.currentNum)/time.Since(s.startTime).Seconds())
+		bytesString = fmt.Sprintf("(%2.0f it/s)", averageRate)
 	} else if !c.showIterationsPerSecond && c.showIterationsCount {
 		bytesString = fmt.Sprintf("(%d/%d)", s.currentNum, c.max)
 	} else if c.showIterationsPerSecond && c.showIterationsCount {
-		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, float64(s.currentNum)/time.Since(s.startTime).Seconds())
+		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, averageRate)
 	}
 
 	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
@@ -403,7 +420,7 @@ func renderProgressBar(c config, s state) (int, error) {
 		c.theme.BarEnd,
 		bytesString,
 		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
-		(time.Duration(leftTime) * time.Second).String(),
+		(time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String(), // time left
 	)
 
 	if c.colorCodes {
@@ -485,4 +502,12 @@ func (p *ProgressBar) Read(b []byte) (n int, err error) {
 	n = len(b)
 	p.Add(n)
 	return
+}
+
+func average(xs []float64) float64 {
+	total := 0.0
+	for _, v := range xs {
+		total += v
+	}
+	return total / float64(len(xs))
 }

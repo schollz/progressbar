@@ -18,6 +18,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func BenchmarkRender(b *testing.B) {
+	bar := NewOptions64(100000000,
+		OptionSetWriter(os.Stderr),
+		OptionShowIts(),
+		OptionSetBytes(100000000),
+	)
+	for i := 0; i < b.N; i++ {
+		bar.Add(1)
+	}
+}
+
 func ExampleProgressBar() {
 	bar := New(100)
 	bar.Add(10)
