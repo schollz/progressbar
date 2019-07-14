@@ -102,6 +102,29 @@ io.Copy(out, resp.Body)
 
 See the tests for another example.
 
+### Changing max value
+The `progressbar` implements `ChangeMax` and `ChangeMax64` functions to change the max value of the progress bar.
+``` golang
+bar := progressbar.New(100)
+bar.ChangeMax(200) // Change the max of the progress bar to 200, not 100
+```
+
+You can also use `ChangeMax64` to minimize casting in the library.
+See the tests for another example.
+
+### Displaying current and total
+To display the current and total amounts in your progress bar, just use the `bar.SetPredictTime()` function like so.
+```golang
+bar := progressbar.New(100)
+bar.SetPredictTime(false)
+
+for i := 0; i < 100; i++ {
+	bar.Add(1)
+}
+```
+
+Run the above code to see the diference!
+See the tests for another example.
 ## Contributing
 
 Pull requests are welcome. Feel free to...
