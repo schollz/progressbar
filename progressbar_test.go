@@ -90,6 +90,16 @@ func ExampleFinish2() {
 	// 100% |██████████|  [0s:0s]
 }
 
+func ExampleXOutOfY() {
+	bar := New(100)
+	bar.SetPredictTime(false)
+
+	for i := 0; i < 100; i++ {
+		bar.Add(1)
+		time.Sleep(1 * time.Millisecond)
+	}
+}
+
 func ExampleSetBytes() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
 	bar.Reset()

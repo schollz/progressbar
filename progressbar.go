@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"strconv"
 
 	"github.com/mitchellh/colorstring"
 )
@@ -16,10 +17,9 @@ import (
 // ProgressBar is a thread-safe, simple
 // progress bar
 type ProgressBar struct {
-	state  state
-	config config
-
-	lock sync.Mutex
+	state       state
+	config      config
+	lock        sync.Mutex
 }
 
 // State is the basic properties of the bar
@@ -48,7 +48,8 @@ type state struct {
 	maxLineWidth int
 	currentBytes float64
 
-	finished bool
+	finished    bool
+	predictTime bool
 }
 
 type config struct {
@@ -186,7 +187,7 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 // NewOptions64 constructs a new instance of ProgressBar, with any options you specify
 func NewOptions64(max int64, options ...Option) *ProgressBar {
 	b := ProgressBar{
-		state: getBlankState(),
+		state: getBasicState(),
 		config: config{
 			writer:           os.Stdout,
 			theme:            defaultTheme,
@@ -207,13 +208,18 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 	return &b
 }
 
-func getBlankState() state {
+func getBasicState() state {
 	now := time.Now()
 	return state{
 		startTime:   now,
 		lastShown:   now,
 		counterTime: now,
+		predictTime: true,
 	}
+}
+
+func getPredictTime(bar ProgressBar) bool {
+	return bar.state.predictTime
 }
 
 // New returns a new ProgressBar
@@ -227,13 +233,21 @@ func (p *ProgressBar) RenderBlank() error {
 	return p.render()
 }
 
+// ToggleTimePredict function
+// takes in a boolean that
+// corrasponds to either
+// predicting time, or not.
+func (p *ProgressBar) SetPredictTime(predictTime bool) {
+	p.state.predictTime = predictTime
+}
+
 // Reset will reset the clock that is used
 // to calculate current time and the time left.
 func (p *ProgressBar) Reset() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	p.state = getBlankState()
+	p.state = getBasicState()
 }
 
 // Finish will fill the bar to full
@@ -401,12 +415,16 @@ func (p *ProgressBar) State() State {
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
 func renderProgressBar(c config, s state) (int, error) {
+	leftBrac := ""
+	rightBrac := ""
+	saucer := ""
+	bytesString := ""
+
 	averageRate := average(s.counterLastTenRates)
 	if len(s.counterLastTenRates) == 0 {
 		averageRate = float64(s.currentNum) / time.Since(s.startTime).Seconds()
 	}
 
-	var saucer string
 	if s.currentSaucerSize > 0 {
 		saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
 		saucerHead := c.theme.SaucerHead
@@ -420,7 +438,6 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	// add on bytes string if max bytes option was set
 	kbPerSecond := averageRate / float64(c.max) * float64(c.maxBytes) / 1000.0
-	bytesString := ""
 	if kbPerSecond > 1000.0 {
 		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
 	} else if kbPerSecond > 0 {
@@ -436,6 +453,18 @@ func renderProgressBar(c config, s state) (int, error) {
 		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, averageRate)
 	}
 
+	if s.predictTime {
+		// Predict the time
+
+		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
+	        rightBrac = (time.Duration((1 / averageRate) * (float64(c.max) - float64(s.currentNum))) * time.Second).String()
+	} else {
+		// Give x out of y
+
+		leftBrac = strconv.Itoa(int(s.currentNum))
+		rightBrac = strconv.Itoa(int(c.max))
+	}
+
 	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
 		c.description,
 		s.currentPercent,
@@ -444,8 +473,8 @@ func renderProgressBar(c config, s state) (int, error) {
 		strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
 		c.theme.BarEnd,
 		bytesString,
-		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
-		(time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String(), // time left
+		leftBrac,
+		rightBrac,
 	)
 
 	if c.colorCodes {
