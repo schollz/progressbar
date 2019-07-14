@@ -228,6 +228,19 @@ func New64(max int64) *ProgressBar {
 	return NewOptions64(max)
 }
 
+// ChangeMax takes in a ProgressBar
+// struct and changes the max value
+func ChangeMax(bar ProgressBar, newMax int) {
+	bar.config.max = int64(newMax)
+}
+
+// Same as ChangeMax but takes in
+// a int64 for if user wants to not
+// cast the new max amount
+func ChangeMax64(bar ProgressBar, newMax int64) {
+	bar.config.max = newMax	
+}
+
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return p.render()
