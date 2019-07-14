@@ -102,6 +102,18 @@ io.Copy(out, resp.Body)
 
 See the tests for another example.
 
+### Changing max value
+
+The `progressbar` implements `ChangeMax` and `ChangeMax64` function. Below is an example of usage.
+```golang
+bar := progressbar.New(50) // Create a progress bar with a max of 50
+bar.ChangeMax(100) // This changes the max of the bar to int 100
+bar.ChangeMax64(200) // This changes the max of the bar to the int64 100
+```
+
+It is probably better to use `ChangeMax64` as minimal casting is done by the library.
+See the tests for another example.
+
 ## Contributing
 
 Pull requests are welcome. Feel free to...
