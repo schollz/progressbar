@@ -57,21 +57,13 @@ func ExampleThrottle() {
 
 func ExampleChangeMax(t *testing.T) {
 	bar := New(50)
-	for i := 0; i < 50; i++ {
-		bar.Add(1)
-		time.Sleep(1 * time.Millisecond)
-	}
-
-
-	bar.ChangeMax(100)
-	for i := 0; i < 100; i++ {
-		bar.Add(1)
-		time.Sleep(1 * time.Millisecond)
-	}
+	bar.ChangeMax64(100)
 
 	if bar.GetMax64() != 100 || bar.GetMax() != 100 {
-		t.Errorf("bar.GetMax64 or bar.GetMax is not returning correct resized max.")
+		t.Errorf("bar.GetMax64 or bar.GetMax is not returning correct resized (from 50) max (to 100).")
 	}
+
+	// No output
 }
 
 func ExampleFinish() {

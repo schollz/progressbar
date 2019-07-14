@@ -218,8 +218,11 @@ func getBasicState() state {
 	}
 }
 
-func getPredictTime(bar ProgressBar) bool {
-	return bar.state.predictTime
+// Get if bar is predicting
+// time or not, as user cannot
+// accsess the non-global var
+func (p *ProgressBar) GetPredictTime() bool {
+	return p.state.predictTime
 }
 
 // New returns a new ProgressBar
