@@ -222,25 +222,6 @@ func New(max int) *ProgressBar {
 	return NewOptions(max)
 }
 
-// New64 returns a new ProgressBar
-// with the specified maximum
-func New64(max int64) *ProgressBar {
-	return NewOptions64(max)
-}
-
-// ChangeMax takes in a ProgressBar
-// struct and changes the max value
-func ChangeMax(bar ProgressBar, newMax int) {
-	bar.config.max = int64(newMax)
-}
-
-// Same as ChangeMax but takes in
-// a int64 for if user wants to not
-// cast the new max amount
-func ChangeMax64(bar ProgressBar, newMax int64) {
-	bar.config.max = newMax	
-}
-
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return p.render()
@@ -320,6 +301,37 @@ func (p *ProgressBar) Clear() error {
 // can be changed on the fly (as for a slow running process).
 func (p *ProgressBar) Describe(description string) {
 	p.config.description = description
+}
+
+// New64 returns a new ProgressBar
+// with the specified maximum
+func New64(max int64) *ProgressBar {
+	return NewOptions64(max)
+}
+
+// ChangeMax takes in a int
+// and changes the max value
+// of the progress bar
+func (p *ProgressBar) ChangeMax(newMax int) {
+	p.config.max = int64(newMax)
+}
+
+// ChangeMax64 is basically
+// the same as ChangeMax,
+// but takes in a int64
+// to avoid casting
+func (p *ProgressBar) ChangeMax64(newMax int64) {
+	p.config.max = newMax
+}
+
+// Get the max of a bar
+func (p *ProgressBar) GetMax() int {
+	return int(p.config.max)
+}
+
+// Same as GetMax, but returns int64
+func (p *ProgressBar) GetMax64() int64 {
+	return p.config.max
 }
 
 // render renders the progress bar, updating the maximum

@@ -54,6 +54,26 @@ func ExampleThrottle() {
 	// Output:
 	// 10% |█         |  [0s:1s]
 }
+
+func ExampleChangeMax(t *testing.T) {
+	bar := New(50)
+	for i := 0; i < 50; i++ {
+		bar.Add(1)
+		time.Sleep(1 * time.Millisecond)
+	}
+
+
+	bar.ChangeMax(100)
+	for i := 0; i < 100; i++ {
+		bar.Add(1)
+		time.Sleep(1 * time.Millisecond)
+	}
+
+	if bar.GetMax64() != 100 || bar.GetMax() != 100 {
+		t.Errorf("bar.GetMax64 or bar.GetMax is not returning correct resized max.")
+	}
+}
+
 func ExampleFinish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionClearOnFinish())
 	bar.Reset()
