@@ -117,6 +117,8 @@ Thanks [@Dynom](https://github.com/dynom) for massive improvements in version 2.
 
 Thanks [@CrushedPixel](https://github.com/CrushedPixel) for adding descriptions and color code support!
 
+Thanks [@MrMe42](https://github.com/MrMe42) for adding some minor features!
+
 ## License
 
 MIT
