@@ -122,9 +122,26 @@ for i := 0; i < 100; i++ {
 	bar.Add(1)
 }
 ```
-
-Run the above code to see the diference!
+Run the above code to see the difference!
 See the tests for another example.
+
+### Displaying Total Increment Over Predicted Time
+
+By default the progress bar will attempt to predict the remaining amount of time left. This can be change to 
+just show the current increment over the total maximum amount set for the progress bar. Do this by using the
+`OptionSetPredictTime` option during progress bar creation.
+
+```golang
+bar := NewOptions(100, OptionSetPredictTime(false))
+_ = bar.Add(20)
+
+// Result equals:
+// "20% |██        |  [20:100]"
+
+// default result equals:
+// "20% |██        |  [3s:15s]"
+```
+
 ## Contributing
 
 Pull requests are welcome. Feel free to...
