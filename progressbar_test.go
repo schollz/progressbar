@@ -55,7 +55,7 @@ func ExampleThrottle() {
 	// 10% |█         |  [0s:1s]
 }
 
-func ExampleChangeMax(t *testing.T) {
+func ExampleChangeMax() {
 	bar := New(50)
 	bar.ChangeMax64(100)
 
@@ -83,8 +83,7 @@ func ExampleFinish2() {
 }
 
 func ExampleXOutOfY() {
-	bar := New(100)
-	bar.SetPredictTime(false)
+	bar := NewOptions(100, OptionSetPredictTime(true))
 
 	for i := 0; i < 100; i++ {
 		bar.Add(1)
@@ -187,6 +186,39 @@ func TestOptionSetTheme(t *testing.T) {
 	}
 }
 
+// TestOptionSetPredictTime ensures that when predict time is turned off, the progress
+// bar is showing the total steps completed of the given max, otherwise the predicted
+// time in seconds is specified.
+func TestOptionSetPredictTime(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(
+		10,
+		OptionSetPredictTime(false),
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+	)
+
+	_ = bar.Add(2)
+	result := strings.TrimSpace(buf.String())
+	expect := "20% |██        |  [2:10]"
+
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+
+	bar.Reset()
+	bar.config.predictTime = true
+	buf.Reset()
+
+	_ = bar.Add(7)
+	result = strings.TrimSpace(buf.String())
+	expect = "70% |███████   |  [0s:0s]"
+
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
 func TestReaderToBuffer(t *testing.T) {
 	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
 	req, err := http.NewRequest("GET", urlToGet, nil)
@@ -196,7 +228,7 @@ func TestReaderToBuffer(t *testing.T) {
 	defer resp.Body.Close()
 
 	var out io.Writer
-	/// setup buffer
+	// / setup buffer
 	var buf bytes.Buffer
 	f := bufio.NewWriter(&buf)
 	out = f

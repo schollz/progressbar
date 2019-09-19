@@ -6,10 +6,10 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
-	"strconv"
 
 	"github.com/mitchellh/colorstring"
 )
@@ -17,9 +17,9 @@ import (
 // ProgressBar is a thread-safe, simple
 // progress bar
 type ProgressBar struct {
-	state       state
-	config      config
-	lock        sync.Mutex
+	state  state
+	config config
+	lock   sync.Mutex
 }
 
 // State is the basic properties of the bar
@@ -47,9 +47,7 @@ type state struct {
 
 	maxLineWidth int
 	currentBytes float64
-
-	finished    bool
-	predictTime bool
+	finished     bool
 }
 
 type config struct {
@@ -59,12 +57,19 @@ type config struct {
 	theme                Theme
 	renderWithBlankState bool
 	description          string
+
 	// whether the output is expected to contain color codes
 	colorCodes bool
 	maxBytes   int64
+
 	// show the iterations per second
 	showIterationsPerSecond bool
 	showIterationsCount     bool
+
+	// whether the progress bar should attempt to predict the finishing
+	// time of the progress based on the start time and the average
+	// number of seconds between  increments.
+	predictTime bool
 
 	// minimum time to wait in between updates
 	throttleDuration time.Duration
@@ -142,6 +147,13 @@ func OptionSetBytes64(maxBytes int64) Option {
 	}
 }
 
+// OptionSetPredictTime will also attempt to predict the time remaining.
+func OptionSetPredictTime(predictTime bool) Option {
+	return func(p *ProgressBar) {
+		p.config.predictTime = predictTime
+	}
+}
+
 // OptionShowCount will also print current count out of total
 func OptionShowCount() Option {
 	return func(p *ProgressBar) {
@@ -194,6 +206,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			width:            40,
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
+			predictTime:      true,
 		},
 	}
 
@@ -214,15 +227,7 @@ func getBasicState() state {
 		startTime:   now,
 		lastShown:   now,
 		counterTime: now,
-		predictTime: true,
 	}
-}
-
-// Get if bar is predicting
-// time or not, as user cannot
-// accsess the non-global var
-func (p *ProgressBar) GetPredictTime() bool {
-	return p.state.predictTime
 }
 
 // New returns a new ProgressBar
@@ -234,14 +239,6 @@ func New(max int) *ProgressBar {
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return p.render()
-}
-
-// ToggleTimePredict function
-// takes in a boolean that
-// corrasponds to either
-// predicting time, or not.
-func (p *ProgressBar) SetPredictTime(predictTime bool) {
-	p.state.predictTime = predictTime
 }
 
 // Reset will reset the clock that is used
@@ -456,11 +453,11 @@ func renderProgressBar(c config, s state) (int, error) {
 		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, averageRate)
 	}
 
-	if s.predictTime {
+	if c.predictTime {
 		// Predict the time
 
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
-	        rightBrac = (time.Duration((1 / averageRate) * (float64(c.max) - float64(s.currentNum))) * time.Second).String()
+		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
 	} else {
 		// Give x out of y
 
