@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -18,8 +19,7 @@ import (
 type ProgressBar struct {
 	state  state
 	config config
-
-	lock sync.Mutex
+	lock   sync.Mutex
 }
 
 // State is the basic properties of the bar
@@ -47,8 +47,7 @@ type state struct {
 
 	maxLineWidth int
 	currentBytes float64
-
-	finished bool
+	finished     bool
 }
 
 type config struct {
@@ -58,12 +57,19 @@ type config struct {
 	theme                Theme
 	renderWithBlankState bool
 	description          string
+
 	// whether the output is expected to contain color codes
 	colorCodes bool
 	maxBytes   int64
+
 	// show the iterations per second
 	showIterationsPerSecond bool
 	showIterationsCount     bool
+
+	// whether the progress bar should attempt to predict the finishing
+	// time of the progress based on the start time and the average
+	// number of seconds between  increments.
+	predictTime bool
 
 	// minimum time to wait in between updates
 	throttleDuration time.Duration
@@ -141,6 +147,13 @@ func OptionSetBytes64(maxBytes int64) Option {
 	}
 }
 
+// OptionSetPredictTime will also attempt to predict the time remaining.
+func OptionSetPredictTime(predictTime bool) Option {
+	return func(p *ProgressBar) {
+		p.config.predictTime = predictTime
+	}
+}
+
 // OptionShowCount will also print current count out of total
 func OptionShowCount() Option {
 	return func(p *ProgressBar) {
@@ -186,13 +199,14 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 // NewOptions64 constructs a new instance of ProgressBar, with any options you specify
 func NewOptions64(max int64, options ...Option) *ProgressBar {
 	b := ProgressBar{
-		state: getBlankState(),
+		state: getBasicState(),
 		config: config{
 			writer:           os.Stdout,
 			theme:            defaultTheme,
 			width:            40,
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
+			predictTime:      true,
 		},
 	}
 
@@ -207,7 +221,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 	return &b
 }
 
-func getBlankState() state {
+func getBasicState() state {
 	now := time.Now()
 	return state{
 		startTime:   now,
@@ -222,12 +236,6 @@ func New(max int) *ProgressBar {
 	return NewOptions(max)
 }
 
-// New64 returns a new ProgressBar
-// with the specified maximum
-func New64(max int64) *ProgressBar {
-	return NewOptions64(max)
-}
-
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return p.render()
@@ -239,7 +247,7 @@ func (p *ProgressBar) Reset() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	p.state = getBlankState()
+	p.state = getBasicState()
 }
 
 // Finish will fill the bar to full
@@ -309,6 +317,37 @@ func (p *ProgressBar) Describe(description string) {
 	p.config.description = description
 }
 
+// New64 returns a new ProgressBar
+// with the specified maximum
+func New64(max int64) *ProgressBar {
+	return NewOptions64(max)
+}
+
+// ChangeMax takes in a int
+// and changes the max value
+// of the progress bar
+func (p *ProgressBar) ChangeMax(newMax int) {
+	p.config.max = int64(newMax)
+}
+
+// ChangeMax64 is basically
+// the same as ChangeMax,
+// but takes in a int64
+// to avoid casting
+func (p *ProgressBar) ChangeMax64(newMax int64) {
+	p.config.max = newMax
+}
+
+// Get the max of a bar
+func (p *ProgressBar) GetMax() int {
+	return int(p.config.max)
+}
+
+// Same as GetMax, but returns int64
+func (p *ProgressBar) GetMax64() int64 {
+	return p.config.max
+}
+
 // render renders the progress bar, updating the maximum
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
@@ -376,12 +415,16 @@ func (p *ProgressBar) State() State {
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
 func renderProgressBar(c config, s state) (int, error) {
+	leftBrac := ""
+	rightBrac := ""
+	saucer := ""
+	bytesString := ""
+
 	averageRate := average(s.counterLastTenRates)
 	if len(s.counterLastTenRates) == 0 {
 		averageRate = float64(s.currentNum) / time.Since(s.startTime).Seconds()
 	}
 
-	var saucer string
 	if s.currentSaucerSize > 0 {
 		saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
 		saucerHead := c.theme.SaucerHead
@@ -395,7 +438,6 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	// add on bytes string if max bytes option was set
 	kbPerSecond := averageRate / float64(c.max) * float64(c.maxBytes) / 1000.0
-	bytesString := ""
 	if kbPerSecond > 1000.0 {
 		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
 	} else if kbPerSecond > 0 {
@@ -411,6 +453,18 @@ func renderProgressBar(c config, s state) (int, error) {
 		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, averageRate)
 	}
 
+	if c.predictTime {
+		// Predict the time
+
+		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
+		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
+	} else {
+		// Give x out of y
+
+		leftBrac = strconv.Itoa(int(s.currentNum))
+		rightBrac = strconv.Itoa(int(c.max))
+	}
+
 	str := fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
 		c.description,
 		s.currentPercent,
@@ -419,8 +473,8 @@ func renderProgressBar(c config, s state) (int, error) {
 		strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
 		c.theme.BarEnd,
 		bytesString,
-		(time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String(),
-		(time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String(), // time left
+		leftBrac,
+		rightBrac,
 	)
 
 	if c.colorCodes {
