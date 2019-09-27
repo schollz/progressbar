@@ -148,6 +148,8 @@ Thanks [@CrushedPixel](https://github.com/CrushedPixel) for adding descriptions 
 
 Thanks [@MrMe42](https://github.com/MrMe42) for adding some minor features!
 
+Thanks [@tehstun](https://github.com/tehstun) for some great PRs!
+
 ## License
 
 MIT
