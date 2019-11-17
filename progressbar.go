@@ -421,7 +421,9 @@ func renderProgressBar(c config, s state) (int, error) {
 	bytesString := ""
 
 	averageRate := average(s.counterLastTenRates)
-	if len(s.counterLastTenRates) == 0 {
+	if len(s.counterLastTenRates) == 0 || s.finished {
+		// if no average samples, or if finished,
+		// then average rate should be the total rate
 		averageRate = float64(s.currentNum) / time.Since(s.startTime).Seconds()
 	}
 
@@ -438,10 +440,6 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	// add on bytes string if max bytes option was set
 	kbPerSecond := averageRate / float64(c.max) * float64(c.maxBytes) / 1000.0
-	if s.finished {
-		// if finished then show the overall time taken
-		kbPerSecond = float64(c.maxBytes) / 1000.0 / time.Since(s.startTime).Seconds()
-	}
 
 	if kbPerSecond > 1000.0 {
 		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
