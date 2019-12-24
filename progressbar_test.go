@@ -35,6 +35,21 @@ func ExampleProgressBar() {
 	// Output:
 	// 10% |████                                    |  [0s:0s]
 }
+
+func ExampleProgressBarSet() {
+	bar := New(100)
+	bar.Set(10)
+	// Output:
+	// 10% |████                                    |  [0s:0s]
+}
+
+func ExampleProgressBarSet64() {
+	bar := New(100)
+	bar.Set64(10)
+	// Output:
+	// 10% |████                                    |  [0s:0s]
+}
+
 func ExampleProgressBarBasic() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()

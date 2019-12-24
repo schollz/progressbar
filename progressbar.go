@@ -266,6 +266,19 @@ func (p *ProgressBar) Add(num int) error {
 	return p.Add64(int64(num))
 }
 
+// Set wil set the bar to a current number
+func (p *ProgressBar) Set(num int) error {
+	return p.Set64(int64(num))
+}
+
+// Set64 wil set the bar to a current number
+func (p *ProgressBar) Set64(num int64) error {
+	p.lock.Lock()
+	toAdd := int64(num) - p.state.currentNum
+	p.lock.Unlock()
+	return p.Add64(toAdd)
+}
+
 // Add64 will add the specified amount to the progressbar
 func (p *ProgressBar) Add64(num int64) error {
 	p.lock.Lock()
