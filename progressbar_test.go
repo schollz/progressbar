@@ -134,6 +134,25 @@ func ExampleOptionSetPredictTime() {
 	// 10% |█         |  [10:100]
 }
 
+func ExampleOptionIgnoreLength() {
+	bar := NewOptions(
+		-1,
+		OptionSetTheme(Theme{Saucer: "*", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}),
+		OptionIgnoreLength(),
+	)
+
+	for i := 0; i < 6; i++ {
+		if i == 0 {
+			bar.Finish()
+		}
+		bar.Add(1)
+		time.Sleep(2 * time.Millisecond)
+	}
+
+	// Output:
+	// |                                       *|
+}
+
 func TestBar(t *testing.T) {
 	bar := New(0)
 	if err := bar.Add(1); err == nil {
@@ -197,6 +216,22 @@ func TestOptionSetTheme(t *testing.T) {
 	bar.Add(5)
 	result := strings.TrimSpace(buf.String())
 	expect := "50% >#####-----<  [0s:0s]"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
+func TestOptionIgnoreLength(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(
+		-1,
+		OptionSetWidth(50),
+		OptionSetWriter(&buf),
+		OptionIgnoreLength(),
+	)
+	bar.Add(60)
+	result := strings.TrimSpace(buf.String())
+	expect := "|         █                                        |"
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}

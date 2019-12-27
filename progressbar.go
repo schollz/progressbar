@@ -57,6 +57,7 @@ type config struct {
 	theme                Theme
 	renderWithBlankState bool
 	description          string
+	ignoreLength         bool
 
 	// whether the output is expected to contain color codes
 	colorCodes bool
@@ -183,9 +184,26 @@ func OptionClearOnFinish() Option {
 	}
 }
 
+// OptionOnCompletion will execute a provided function upon finishing
 func OptionOnCompletion(cmpl func()) Option {
 	return func(p *ProgressBar) {
 		p.config.onCompletion = cmpl
+	}
+}
+
+// OptionIgnoreLength will create an infinite bouncy animation if length of bar is unknown
+func OptionIgnoreLength() Option {
+	return func(p *ProgressBar) {
+		if p.config.max != -1 {
+			fmt.Fprintf(os.Stderr, "option clash: IgnoreLength incompatible with known max-value, max-bytes, its(/s) or time prediction.\n")
+			os.Exit(1)
+		}
+		p.config.max = int64(p.config.width)
+		p.config.predictTime = false
+		p.config.showIterationsCount = false
+		p.config.showIterationsCount = false
+
+		p.config.ignoreLength = true
 	}
 }
 
@@ -207,6 +225,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
 			predictTime:      true,
+			ignoreLength:     false,
 		},
 	}
 
@@ -255,15 +274,11 @@ func (p *ProgressBar) Finish() error {
 	if p == nil {
 		return fmt.Errorf("progressbar is nil")
 	}
+
 	p.lock.Lock()
 	p.state.currentNum = p.config.max
 	p.lock.Unlock()
 	return p.Add(0)
-}
-
-// Add will add the specified amount to the progressbar
-func (p *ProgressBar) Add(num int) error {
-	return p.Add64(int64(num))
 }
 
 // Set wil set the bar to a current number
@@ -277,6 +292,11 @@ func (p *ProgressBar) Set64(num int64) error {
 	toAdd := int64(num) - p.state.currentNum
 	p.lock.Unlock()
 	return p.Add64(toAdd)
+}
+
+// Add will add the specified amount to the progressbar
+func (p *ProgressBar) Add(num int) error {
+	return p.Add64(int64(num))
 }
 
 // Add64 will add the specified amount to the progressbar
@@ -301,6 +321,13 @@ func (p *ProgressBar) Add64(num int64) error {
 	}
 
 	percent := float64(p.state.currentNum) / float64(p.config.max)
+
+	// purpose of third condition: ensure .Finish() actually finishes and doesn't reset the bar
+	if p.config.ignoreLength && percent >= .95 && percent != 1.0 {
+		p.state.currentNum = p.state.currentNum % p.config.max // not using .Set64() due to deadlock issues
+		percent = float64(p.state.currentNum) / float64(p.config.max)
+	}
+
 	p.state.currentSaucerSize = int(percent * float64(p.config.width))
 	p.state.currentPercent = int(percent * 100)
 	updateBar := p.state.currentPercent != p.state.lastPercent && p.state.currentPercent > 0
@@ -440,8 +467,17 @@ func renderProgressBar(c config, s state) (int, error) {
 		averageRate = float64(s.currentNum) / time.Since(s.startTime).Seconds()
 	}
 
-	if s.currentSaucerSize > 0 {
+	if s.currentSaucerSize > 0 && !c.ignoreLength {
 		saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
+		saucerHead := c.theme.SaucerHead
+		if saucerHead == "" || s.currentSaucerSize == c.width {
+			// use the saucer for the saucer head if it hasn't been set
+			// to preserve backwards compatibility
+			saucerHead = c.theme.Saucer
+		}
+		saucer += saucerHead
+	} else if s.currentSaucerSize > 0 {
+		saucer = strings.Repeat(c.theme.SaucerPadding, s.currentSaucerSize-1)
 		saucerHead := c.theme.SaucerHead
 		if saucerHead == "" || s.currentSaucerSize == c.width {
 			// use the saucer for the saucer head if it hasn't been set
@@ -492,6 +528,16 @@ func renderProgressBar(c config, s state) (int, error) {
 		leftBrac,
 		rightBrac,
 	)
+
+	if c.ignoreLength {
+		str = fmt.Sprintf("\r%s %s%s%s%s",
+			c.description,
+			c.theme.BarStart,
+			saucer,
+			strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
+			c.theme.BarEnd,
+		)
+	}
 
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
