@@ -323,8 +323,13 @@ func (p *ProgressBar) Add64(num int64) error {
 	percent := float64(p.state.currentNum) / float64(p.config.max)
 
 	// purpose of third condition: ensure .Finish() actually finishes and doesn't reset the bar
-	if p.config.ignoreLength && percent >= .95 && percent != 1.0 {
-		p.state.currentNum = p.state.currentNum % p.config.max // not using .Set64() due to deadlock issues
+	if p.config.ignoreLength {
+		if percent > 0.95 && percent < 1.0 {
+			p.state.currentNum = 0 // not using .Set64() due to deadlock issues
+		} else if percent > 1.0 {
+			p.state.currentNum = p.state.currentNum % p.config.max
+
+		}
 		percent = float64(p.state.currentNum) / float64(p.config.max)
 	}
 
