@@ -131,6 +131,24 @@ bar.Add(20)
 // "20% |██        |  [3s:15s]"
 ```
 
+### Pinging bar at unknown length
+
+If you don't know how long the given operation takes, you can opt into a pinging bar until your operation finishes. 
+In order to activate this make sure to provide `-1` as the first argument (the `max` argument) and set the `OptionIgnoreLength()` option during progress bar creation.
+
+```golang
+bar := progressbar.NewOptions(
+    -1,
+    OptionSetTheme(Theme{Saucer: "*", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}),
+    progressbar.OptionIgnoreLength(),
+)
+
+for i := 0; i < 45; i++ {
+    bar.Add(1)
+    time.Sleep(10 * time.Millisecond)
+}
+```
+
 ## Contributing
 
 Pull requests are welcome. Feel free to...
