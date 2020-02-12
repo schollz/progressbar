@@ -36,21 +36,21 @@ func ExampleProgressBar() {
 	// 10% |████                                    |  [0s:0s]
 }
 
-func ExampleProgressBarSet() {
+func ExampleProgressBar_Set() {
 	bar := New(100)
 	bar.Set(10)
 	// Output:
 	// 10% |████                                    |  [0s:0s]
 }
 
-func ExampleProgressBarSet64() {
+func ExampleProgressBar_Set64() {
 	bar := New(100)
 	bar.Set64(10)
 	// Output:
 	// 10% |████                                    |  [0s:0s]
 }
 
-func ExampleProgressBarBasic() {
+func ExampleProgressBar_basic() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
@@ -59,7 +59,7 @@ func ExampleProgressBarBasic() {
 	// 10% |█         |  [1s:9s]
 }
 
-func ExampleThrottle() {
+func ExampleOptionThrottle() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionThrottle(100*time.Millisecond))
 	bar.Reset()
 	bar.Add(5)
@@ -70,13 +70,13 @@ func ExampleThrottle() {
 	// 10% |█         |  [0s:1s]
 }
 
-func ExampleChangeMax() {
+func ExampleProgressBar_ChangeMax() {
 	bar := New(50)
 	bar.ChangeMax64(100)
 	// No output
 }
 
-func ExampleFinish() {
+func ExampleOptionClearOnFinish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionClearOnFinish())
 	bar.Reset()
 	bar.Finish()
@@ -84,14 +84,14 @@ func ExampleFinish() {
 	// Output:
 	// Finished
 }
-func ExampleFinish2() {
+func ExampleProgressBar_Finish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Finish()
 	// Output:
 	// 100% |██████████|  [0s:0s]
 }
 
-func ExampleXOutOfY() {
+func Example_xOutOfY() {
 	bar := NewOptions(100, OptionSetPredictTime(true))
 
 	for i := 0; i < 100; i++ {
@@ -100,7 +100,7 @@ func ExampleXOutOfY() {
 	}
 }
 
-func ExampleSetBytes() {
+func ExampleOptionSetBytes() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
@@ -109,7 +109,7 @@ func ExampleSetBytes() {
 	// 10% |█         | (1.0 kB/s) [1s:9s]
 }
 
-func ExampleShowCount() {
+func ExampleOptionShowIts_count() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionShowCount())
 	bar.Reset()
 	time.Sleep(1 * time.Second)
@@ -118,7 +118,7 @@ func ExampleShowCount() {
 	// 10% |█         | (10/100, 10 it/s) [1s:9s]
 }
 
-func ExampleSetIts() {
+func ExampleOptionShowIts() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
 	bar.Reset()
 	time.Sleep(1 * time.Second)
@@ -156,7 +156,7 @@ func TestState(t *testing.T) {
 	}
 }
 
-func ExampleProgressBar_RenderBlank() {
+func ExampleOptionSetRenderBlankState() {
 	NewOptions(10, OptionSetWidth(10), OptionSetRenderBlankState(true))
 	// Output:
 	// 0% |          |  [0s:0s]
@@ -328,7 +328,7 @@ func md5sum(filePath string) (result string, err error) {
 	return
 }
 
-func ExampleDescribe() {
+func ExampleProgressBar_Describe() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
@@ -337,3 +337,4 @@ func ExampleDescribe() {
 	// Output:
 	// performing axial adjustements  10% |█         |  [1s:9s]
 }
+
