@@ -337,4 +337,3 @@ func ExampleProgressBar_Describe() {
 	// Output:
 	// performing axial adjustements  10% |█         |  [1s:9s]
 }
-
