@@ -1,7 +1,6 @@
 package progressbar
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
@@ -236,6 +235,10 @@ func TestOptionSetPredictTime(t *testing.T) {
 }
 
 func TestReaderToBuffer(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
 	req, err := http.NewRequest("GET", urlToGet, nil)
 	assert.Nil(t, err)
@@ -243,29 +246,22 @@ func TestReaderToBuffer(t *testing.T) {
 	assert.Nil(t, err)
 	defer resp.Body.Close()
 
-	var out io.Writer
-	// / setup buffer
-	var buf bytes.Buffer
-	f := bufio.NewWriter(&buf)
-	out = f
-
+	buf := new(bytes.Buffer)
 	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
-	out = io.MultiWriter(out, bar)
+	out := io.MultiWriter(buf, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
 
-	// if reading to buffer, write buffer bytes
-	f.Flush()
-	err = ioutil.WriteFile("croc_v4.1.4_Windows-64bit_GUI.zip", buf.Bytes(), 0644)
-	assert.Nil(t, err)
-
-	md5, err := md5sum("croc_v4.1.4_Windows-64bit_GUI.zip")
+	md5, err := md5sum(buf)
 	assert.Nil(t, err)
 	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
-	assert.Nil(t, os.Remove("croc_v4.1.4_Windows-64bit_GUI.zip"))
 }
 
 func TestReaderToFile(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
 	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
 	req, err := http.NewRequest("GET", urlToGet, nil)
 	assert.Nil(t, err)
@@ -273,22 +269,23 @@ func TestReaderToFile(t *testing.T) {
 	assert.Nil(t, err)
 	defer resp.Body.Close()
 
-	var out io.Writer
-	// read to file
-	f, err := os.OpenFile("croc_v4.1.4_Windows-64bit_GUI.zip", os.O_CREATE|os.O_WRONLY, 0666)
-	assert.Nil(t, err)
-	out = f
+	f, err := ioutil.TempFile("", "progressbar_testfile")
+	if err != nil {
+		t.Fatal()
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
 
 	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
-	out = io.MultiWriter(out, bar)
+	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
-	f.Close()
+	f.Sync()
+	f.Seek(0, 0)
 
-	md5, err := md5sum("croc_v4.1.4_Windows-64bit_GUI.zip")
+	md5, err := md5sum(f)
 	assert.Nil(t, err)
 	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
-	assert.Nil(t, os.Remove("croc_v4.1.4_Windows-64bit_GUI.zip"))
 }
 
 func TestConcurrency(t *testing.T) {
@@ -311,21 +308,10 @@ func TestConcurrency(t *testing.T) {
 	assert.Equal(t, expect, result)
 }
 
-func md5sum(filePath string) (result string, err error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
+func md5sum(r io.Reader) (string, error) {
 	hash := md5.New()
-	_, err = io.Copy(hash, file)
-	if err != nil {
-		return
-	}
-
-	result = hex.EncodeToString(hash.Sum(nil))
-	return
+	_, err := io.Copy(hash, r)
+	return hex.EncodeToString(hash.Sum(nil)), err
 }
 
 func ExampleProgressBar_Describe() {
