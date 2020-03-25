@@ -554,6 +554,7 @@ func (r *Reader) Close() (err error) {
 	if closer, ok := r.Reader.(io.Closer); ok {
 		return closer.Close()
 	}
+	r.bar.Finish()
 	return
 }
 
