@@ -252,9 +252,6 @@ func (p *ProgressBar) Reset() {
 
 // Finish will fill the bar to full
 func (p *ProgressBar) Finish() error {
-	if p == nil {
-		return fmt.Errorf("progressbar is nil")
-	}
 	p.lock.Lock()
 	p.state.currentNum = p.config.max
 	p.lock.Unlock()
@@ -291,7 +288,7 @@ func (p *ProgressBar) Add64(num int64) error {
 
 	// reset the countdown timer every second to take rolling average
 	p.state.counterNumSinceLast += num
-	if time.Since(p.state.counterTime).Seconds() > 0.5 && time.Since(p.state.counterTime).Seconds() > 0 {
+	if time.Since(p.state.counterTime).Seconds() > 0.5 {
 		p.state.counterLastTenRates = append(p.state.counterLastTenRates, float64(p.state.counterNumSinceLast)/time.Since(p.state.counterTime).Seconds())
 		if len(p.state.counterLastTenRates) > 10 {
 			p.state.counterLastTenRates = p.state.counterLastTenRates[1:]
