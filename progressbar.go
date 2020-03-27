@@ -57,6 +57,7 @@ type config struct {
 	theme                Theme
 	renderWithBlankState bool
 	description          string
+	ignoreLength         bool
 
 	// whether the output is expected to contain color codes
 	colorCodes bool
@@ -207,11 +208,18 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
 			predictTime:      true,
+			ignoreLength:     false,
 		},
 	}
 
 	for _, o := range options {
 		o(&b)
+	}
+
+	if b.config.max == -1 {
+		// we don't know the maxBytes of the operation.
+		b.config.ignoreLength = true
+		b.config.max = int64(b.config.width)
 	}
 
 	if b.config.renderWithBlankState {
@@ -284,7 +292,19 @@ func (p *ProgressBar) Add64(num int64) error {
 	if p.config.max == 0 {
 		return errors.New("max must be greater than 0")
 	}
-	p.state.currentNum += num
+
+	if p.config.ignoreLength {
+		// infinite scrolling, never reach the end take good care of path
+		// TODO do it properly
+		p.state.currentNum += num
+		p.state.currentNum %= p.config.max
+	} else {
+		p.state.currentNum += num
+	}
+
+	// p.state.currentBytes = float64(percent) * float64(p.config.maxBytes)
+	// updated number of bytes transferred
+	p.state.currentBytes += float64(num)
 
 	// reset the countdown timer every second to take rolling average
 	p.state.counterNumSinceLast += num
@@ -302,7 +322,6 @@ func (p *ProgressBar) Add64(num int64) error {
 	p.state.currentPercent = int(percent * 100)
 	updateBar := p.state.currentPercent != p.state.lastPercent && p.state.currentPercent > 0
 
-	p.state.currentBytes = float64(percent) * float64(p.config.maxBytes)
 	p.state.lastPercent = p.state.currentPercent
 	if p.state.currentNum > p.config.max {
 		return errors.New("current number exceeds max")
@@ -434,11 +453,15 @@ func renderProgressBar(c config, s state) (int, error) {
 	if len(s.counterLastTenRates) == 0 || s.finished {
 		// if no average samples, or if finished,
 		// then average rate should be the total rate
-		averageRate = float64(s.currentNum) / time.Since(s.startTime).Seconds()
+		averageRate = s.currentBytes / time.Since(s.startTime).Seconds()
 	}
 
 	if s.currentSaucerSize > 0 {
-		saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
+		if c.ignoreLength {
+			saucer = strings.Repeat(c.theme.SaucerPadding, s.currentSaucerSize-1)
+		} else {
+			saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
+		}
 		saucerHead := c.theme.SaucerHead
 		if saucerHead == "" || s.currentSaucerSize == c.width {
 			// use the saucer for the saucer head if it hasn't been set
@@ -449,31 +472,40 @@ func renderProgressBar(c config, s state) (int, error) {
 	}
 
 	// add on bytes string if max bytes option was set
-	kbPerSecond := averageRate / float64(c.max) * float64(c.maxBytes) / 1000.0
+	// rolling average kb/sec
+	kbPerSecond := averageRate / 1024.0
+	// float64(p.state.currentBytes) / 1000.0 / s.SecondsSince
 
 	if kbPerSecond > 1000.0 {
-		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1000.0)
+		bytesString = fmt.Sprintf("(%2.1f MB/s)", kbPerSecond/1024.0)
 	} else if kbPerSecond > 0 {
 		bytesString = fmt.Sprintf("(%2.1f kB/s)", kbPerSecond)
 	}
 
+	// TODO to refactor
 	if c.showIterationsPerSecond && !c.showIterationsCount {
 		// replace bytesString if used
 		bytesString = fmt.Sprintf("(%2.0f it/s)", averageRate)
 	} else if !c.showIterationsPerSecond && c.showIterationsCount {
-		bytesString = fmt.Sprintf("(%d/%d)", s.currentNum, c.max)
+		if !c.ignoreLength {
+			bytesString = fmt.Sprintf("(%f/%d)", s.currentBytes, c.max)
+		} else {
+			bytesString = fmt.Sprintf("(%f/%s)", s.currentBytes, "")
+		}
 	} else if c.showIterationsPerSecond && c.showIterationsCount {
-		bytesString = fmt.Sprintf("(%d/%d, %2.0f it/s)", s.currentNum, c.max, averageRate)
+		if !c.ignoreLength {
+			bytesString = fmt.Sprintf("(%f/%d, %2.0f it/s)", s.currentBytes, c.max, averageRate)
+		} else {
+			bytesString = fmt.Sprintf("(%f/%s, %2.0f it/s)", s.currentBytes, "", averageRate)
+		}
 	}
 
 	if c.predictTime {
 		// Predict the time
-
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
 		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
 	} else {
 		// Give x out of y
-
 		leftBrac = strconv.Itoa(int(s.currentNum))
 		rightBrac = strconv.Itoa(int(c.max))
 	}
@@ -489,6 +521,20 @@ func renderProgressBar(c config, s state) (int, error) {
 		leftBrac,
 		rightBrac,
 	)
+
+	if c.ignoreLength {
+		str = fmt.Sprintf("\r%s %s%s%s%s %s ",
+			c.description,
+			c.theme.BarStart,
+			saucer,
+			strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
+			c.theme.BarEnd,
+			bytesString,
+			// predict time is not possible
+			// leftBrac,
+			// rightBrac,
+		)
+	}
 
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
