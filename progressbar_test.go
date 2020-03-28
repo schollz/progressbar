@@ -21,7 +21,6 @@ func BenchmarkRender(b *testing.B) {
 	bar := NewOptions64(100000000,
 		OptionSetWriter(os.Stderr),
 		OptionShowIts(),
-		OptionSetBytes(100000000),
 	)
 	for i := 0; i < b.N; i++ {
 		bar.Add(1)
@@ -99,22 +98,13 @@ func Example_xOutOfY() {
 	}
 }
 
-func ExampleOptionSetBytes() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
-	bar.Reset()
-	time.Sleep(1 * time.Second)
-	bar.Add(10)
-	// Output:
-	// 10% |█         | (1.0 kB/s) [1s:9s]
-}
-
 func ExampleOptionShowIts_count() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionShowCount())
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
 	// Output:
-	// 10% |█         | (10/100, 10 it/s) [1s:9s]
+	// 10% |█         | (10/100)(10 it/s) [1s:9s]
 }
 
 func ExampleOptionShowIts() {
@@ -133,6 +123,42 @@ func ExampleOptionSetPredictTime() {
 	// 10% |█         |  [10:100]
 }
 
+func ExampleIgnoreLength_WithIteration() {
+	/*
+		IgnoreLength test with iteration count and iteration rate
+	*/
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowIts(),
+		OptionShowCount(),
+	)
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(5)
+
+	// Output:
+	// 50% |    █     | (5/-)( 5 it/s)
+}
+
+func ExampleIgnoreLength_WithSpeed() {
+	/*
+		IgnoreLength test with iterations and count
+	*/
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowBytes(true),
+	)
+
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	// since 10 is the width and we don't know the max bytes
+	// it will do a infinite scrolling.
+	bar.Add(11)
+
+	// Output:
+	// 10% |█         | (0.011 kB/s)
+}
+
 func TestBar(t *testing.T) {
 	bar := New(0)
 	if err := bar.Add(1); err == nil {
@@ -145,7 +171,7 @@ func TestBar(t *testing.T) {
 }
 
 func TestState(t *testing.T) {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
+	bar := NewOptions(100, OptionSetWidth(10))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -234,6 +260,29 @@ func TestOptionSetPredictTime(t *testing.T) {
 	}
 }
 
+func TestIgnoreLength(t *testing.T) {
+	bar := NewOptions(
+		-1,
+		OptionSetWidth(100),
+	)
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+
+	state := bar.State()
+	if state.CurrentBytes != 10.0 {
+		t.Errorf("Number of bytes mismatched gotBytes %f wantBytes %f", state.CurrentBytes, 10.0)
+	}
+	if state.CurrentPercent != 0.1 {
+		t.Errorf("Percent of bar mismatched got %f want %f", state.CurrentPercent, 0.1)
+	}
+
+	kbPerSec := fmt.Sprintf("%2.2f", state.KBsPerSecond)
+	if kbPerSec != "0.01" {
+		t.Errorf("Speed mismatched got %s want %s", kbPerSec, "0.01")
+	}
+}
+
 func TestReaderToBuffer(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
@@ -247,7 +296,7 @@ func TestReaderToBuffer(t *testing.T) {
 	defer resp.Body.Close()
 
 	buf := new(bytes.Buffer)
-	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
+	bar := NewOptions(int(resp.ContentLength))
 	out := io.MultiWriter(buf, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
@@ -276,7 +325,7 @@ func TestReaderToFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
+	bar := NewOptions(int(resp.ContentLength))
 	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
