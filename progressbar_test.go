@@ -68,12 +68,6 @@ func ExampleOptionThrottle() {
 	// 10% |█         |  [0s:1s]
 }
 
-func ExampleProgressBar_ChangeMax() {
-	bar := New(50)
-	bar.ChangeMax64(100)
-	// No output
-}
-
 func ExampleOptionClearOnFinish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionClearOnFinish())
 	bar.Reset()

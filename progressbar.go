@@ -207,7 +207,6 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
 			predictTime:      true,
-			ignoreLength:     false,
 		},
 	}
 
@@ -345,21 +344,6 @@ func (p *ProgressBar) Describe(description string) {
 // with the specified maximum
 func New64(max int64) *ProgressBar {
 	return NewOptions64(max)
-}
-
-// ChangeMax takes in a int
-// and changes the max value
-// of the progress bar
-func (p *ProgressBar) ChangeMax(newMax int) {
-	p.config.max = int64(newMax)
-}
-
-// ChangeMax64 is basically
-// the same as ChangeMax,
-// but takes in a int64
-// to avoid casting
-func (p *ProgressBar) ChangeMax64(newMax int64) {
-	p.config.max = newMax
 }
 
 // Get the max of a bar
