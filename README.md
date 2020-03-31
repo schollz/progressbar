@@ -94,7 +94,7 @@ defer f.Close()
 
 bar := progressbar.NewOptions(
     int(resp.ContentLength), 
-    progressbar.OptionSetBytes(int(resp.ContentLength)),
+    progressbar.OptionShowBytes(true),
 )
 out = io.MultiWriter(out, bar)
 io.Copy(out, resp.Body)
@@ -102,17 +102,6 @@ io.Copy(out, resp.Body)
 
 See the tests for another example.
 
-### Changing max value
-
-The `progressbar` implements `ChangeMax` and `ChangeMax64` functions to change the max value of the progress bar.
-
-```golang
-bar := progressbar.New(100)
-bar.ChangeMax(200) // Change the max of the progress bar to 200, not 100
-```
-
-You can also use `ChangeMax64` to minimize casting in the library.
-See the tests for another example.
 
 ### Displaying Total Increment Over Predicted Time
 
@@ -149,6 +138,8 @@ Thanks [@CrushedPixel](https://github.com/CrushedPixel) for adding descriptions 
 Thanks [@MrMe42](https://github.com/MrMe42) for adding some minor features!
 
 Thanks [@tehstun](https://github.com/tehstun) for some great PRs!
+
+Thanks [@Benzammour](https://github.com/Benzammour) and [@haseth](https://github.com/haseth) for helping create v3!
 
 ## License
 

@@ -290,7 +290,7 @@ func TestReaderToBuffer(t *testing.T) {
 	defer resp.Body.Close()
 
 	buf := new(bytes.Buffer)
-	bar := NewOptions(int(resp.ContentLength))
+	bar := NewOptions(int(resp.ContentLength), OptionShowBytes(true))
 	out := io.MultiWriter(buf, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
@@ -319,7 +319,7 @@ func TestReaderToFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	bar := NewOptions(int(resp.ContentLength))
+	bar := NewOptions(int(resp.ContentLength), OptionShowBytes(true))
 	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
