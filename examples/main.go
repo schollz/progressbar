@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/k0kubun/go-ansi"
-	"github.com/schollz/progressbar/v2"
+	"github.com/schollz/progressbar/v3"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 
 	bar := progressbar.NewOptions(
 		int(resp.ContentLength),
-		progressbar.OptionSetBytes(int(resp.ContentLength)),
+		progressbar.OptionShowBytes(true),
 		progressbar.OptionThrottle(10*time.Millisecond),
 	)
 	out = io.MultiWriter(out, bar)
@@ -62,10 +62,10 @@ func main() {
 	}
 	fmt.Println("finished2")
 
-	bar = progressbar.NewOptions(100,
+	bar = progressbar.NewOptions(1000,
 		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
 		progressbar.OptionEnableColorCodes(true),
-		progressbar.OptionSetBytes(10000),
+		progressbar.OptionShowBytes(true),
 		progressbar.OptionSetWidth(15),
 		progressbar.OptionSetDescription("[cyan][1/3][reset] Writing moshable file..."),
 		progressbar.OptionSetTheme(progressbar.Theme{
