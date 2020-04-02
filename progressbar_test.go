@@ -110,6 +110,15 @@ func ExampleOptionShowIts() {
 	// 10% |█         | (10 it/s) [1s:9s]
 }
 
+func ExampleOptionShowItsSlow() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
+	bar.Reset()
+	time.Sleep(4 * time.Second)
+	bar.Add(1)
+	// Output:
+	// 1% |          | (15 it/min) [4s:6m36s]
+}
+
 func ExampleOptionSetPredictTime() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
 	_ = bar.Add(10)

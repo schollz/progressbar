@@ -473,7 +473,11 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	// show iterations rate
 	if c.showIterationsPerSecond {
-		bytesString += fmt.Sprintf("(%2.0f it/s)", averageRate)
+		if averageRate > 1 {
+			bytesString += fmt.Sprintf("(%2.0f it/s)", averageRate)
+		} else {
+			bytesString += fmt.Sprintf("(%2.0f it/min)", 60*averageRate)
+		}
 	}
 
 	// show time prediction in "current/total" seconds format
