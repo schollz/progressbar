@@ -291,7 +291,7 @@ func TestReaderToBuffer(t *testing.T) {
 		t.SkipNow()
 	}
 
-	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+	urlToGet := "https://dl.google.com/go/go1.14.1.src.tar.gz"
 	req, err := http.NewRequest("GET", urlToGet, nil)
 	assert.Nil(t, err)
 	resp, err := http.DefaultClient.Do(req)
@@ -306,7 +306,7 @@ func TestReaderToBuffer(t *testing.T) {
 
 	md5, err := md5sum(buf)
 	assert.Nil(t, err)
-	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
+	assert.Equal(t, "d441819a800f8c90825355dfbede7266", md5)
 }
 
 func TestReaderToFile(t *testing.T) {
@@ -314,7 +314,7 @@ func TestReaderToFile(t *testing.T) {
 		t.SkipNow()
 	}
 
-	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+	urlToGet := "https://dl.google.com/go/go1.14.1.src.tar.gz"
 	req, err := http.NewRequest("GET", urlToGet, nil)
 	assert.Nil(t, err)
 	resp, err := http.DefaultClient.Do(req)
@@ -337,7 +337,7 @@ func TestReaderToFile(t *testing.T) {
 
 	md5, err := md5sum(f)
 	assert.Nil(t, err)
-	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
+	assert.Equal(t, "d441819a800f8c90825355dfbede7266", md5)
 }
 
 func TestConcurrency(t *testing.T) {
