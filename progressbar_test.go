@@ -98,7 +98,7 @@ func ExampleOptionShowIts_count() {
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
 	// Output:
-	// 10% |█         | (10/100)(10 it/s) [1s:9s]
+	// 10% |█         | (10/100, 10 it/s) [1s:9s]
 }
 
 func ExampleOptionShowIts() {
@@ -140,7 +140,7 @@ func ExampleIgnoreLength_WithIteration() {
 	bar.Add(5)
 
 	// Output:
-	// 50% |    █     | (5/-)( 5 it/s)
+	// 50% |    █     | (5/-, 5 it/s)
 }
 
 func ExampleIgnoreLength_WithSpeed() {

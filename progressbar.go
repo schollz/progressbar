@@ -453,31 +453,48 @@ func renderProgressBar(c config, s state) (int, error) {
 
 	// show rolling average rate in kB/sec or MB/sec
 	if c.showBytes {
+		if bytesString == "" {
+			bytesString += "("
+		} else {
+			bytesString += ", "
+		}
 		kbPerSecond := averageRate / 1024.0
-
 		if kbPerSecond > 1024.0 {
-			bytesString += fmt.Sprintf("(%2.3f MB/s)", kbPerSecond/1024.0)
+			bytesString += fmt.Sprintf("%0.3f MB/s", kbPerSecond/1024.0)
 		} else if kbPerSecond > 0 {
-			bytesString += fmt.Sprintf("(%2.3f kB/s)", kbPerSecond)
+			bytesString += fmt.Sprintf("%0.3f kB/s", kbPerSecond)
 		}
 	}
 
 	// show iteration count in "current/total" iterations format
 	if c.showIterationsCount {
-		if !c.ignoreLength {
-			bytesString += fmt.Sprintf("(%.0f/%d)", s.currentBytes, c.max)
+		if bytesString == "" {
+			bytesString += "("
 		} else {
-			bytesString += fmt.Sprintf("(%.0f/%s)", s.currentBytes, "-")
+			bytesString += ", "
+		}
+		if !c.ignoreLength {
+			bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
+		} else {
+			bytesString += fmt.Sprintf("%.0f/%s", s.currentBytes, "-")
 		}
 	}
 
 	// show iterations rate
 	if c.showIterationsPerSecond {
-		if averageRate > 1 {
-			bytesString += fmt.Sprintf("(%2.0f it/s)", averageRate)
+		if bytesString == "" {
+			bytesString += "("
 		} else {
-			bytesString += fmt.Sprintf("(%2.0f it/min)", 60*averageRate)
+			bytesString += ", "
 		}
+		if averageRate > 1 {
+			bytesString += fmt.Sprintf("%0.0f it/s", averageRate)
+		} else {
+			bytesString += fmt.Sprintf("%0.0f it/min", 60*averageRate)
+		}
+	}
+	if bytesString != "" {
+		bytesString += ")"
 	}
 
 	// show time prediction in "current/total" seconds format
