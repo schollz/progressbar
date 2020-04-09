@@ -34,8 +34,8 @@ type State struct {
 
 type state struct {
 	currentNum        int64
-	currentPercent    int
-	lastPercent       int
+	currentPercent    float64
+	lastPercent       float64
 	currentSaucerSize int
 
 	lastShown time.Time
@@ -313,7 +313,7 @@ func (p *ProgressBar) Add64(num int64) error {
 
 	percent := float64(p.state.currentNum) / float64(p.config.max)
 	p.state.currentSaucerSize = int(percent * float64(p.config.width))
-	p.state.currentPercent = int(percent * 100)
+	p.state.currentPercent = percent * 100
 	updateBar := p.state.currentPercent != p.state.lastPercent && p.state.currentPercent > 0
 
 	p.state.lastPercent = p.state.currentPercent
@@ -512,7 +512,7 @@ func renderProgressBar(c config, s state) (int, error) {
 		Description % |------        |  (kb/s) (iteration count) (iteration rate) (predict time)
 	*/
 	if c.ignoreLength {
-		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s ",
+		str = fmt.Sprintf("\r%s%3.1f%% %s%s%s%s %s ",
 			c.description,
 			s.currentPercent,
 			c.theme.BarStart,
@@ -522,7 +522,7 @@ func renderProgressBar(c config, s state) (int, error) {
 			bytesString,
 		)
 	} else {
-		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
+		str = fmt.Sprintf("\r%s%3.1f%% %s%s%s%s %s [%s:%s]",
 			c.description,
 			s.currentPercent,
 			c.theme.BarStart,
