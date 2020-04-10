@@ -63,6 +63,9 @@ type config struct {
 	colorCodes bool
 	maxBytes   int64
 
+	//force render on Add
+	forceRender bool
+
 	// show rate of change in kB/sec or MB/sec
 	showBytes bool
 	// show the iterations per second
@@ -186,6 +189,14 @@ func OptionOnCompletion(cmpl func()) Option {
 func OptionShowBytes(val bool) Option {
 	return func(p *ProgressBar) {
 		p.config.showBytes = val
+	}
+}
+
+// OptionForceRender will make the bar update
+// whenever a value is added with Add
+func OptionForceRender() Option {
+	return func(p *ProgressBar) {
+		p.config.forceRender = true
 	}
 }
 
@@ -322,7 +333,7 @@ func (p *ProgressBar) Add64(num int64) error {
 	}
 
 	// always update if show bytes/second or its/second
-	if updateBar || p.config.showIterationsPerSecond || p.config.maxBytes > 0 {
+	if p.config.forceRender || updateBar || p.config.showIterationsPerSecond || p.config.maxBytes > 0 {
 		return p.render()
 	}
 

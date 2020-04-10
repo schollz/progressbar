@@ -375,3 +375,23 @@ func ExampleProgressBar_Describe() {
 	// Output:
 	// performing axial adjustements  10% |█         |  [1s:9s]
 }
+
+func TestForceRender(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(
+		1000,
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+		OptionForceRender(),
+		OptionSetPredictTime(false),
+	)
+
+	_ = bar.Add(2)
+
+	result := strings.TrimSpace(buf.String())
+	expect := "0% |          |  [2:1000]"
+
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
