@@ -126,6 +126,14 @@ func ExampleOptionSetPredictTime() {
 	// 10% |█         |  [10:100]
 }
 
+func ExampleOptionChangeMax() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
+	bar.ChangeMax(50)
+	bar.Add(50)
+	// Output:
+	// 100% |██████████|  [50:50]
+}
+
 func ExampleIgnoreLength_WithIteration() {
 	/*
 		IgnoreLength test with iteration count and iteration rate

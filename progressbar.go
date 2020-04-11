@@ -26,7 +26,6 @@ type ProgressBar struct {
 type State struct {
 	CurrentPercent float64
 	CurrentBytes   float64
-	MaxBytes       int64
 	SecondsSince   float64
 	SecondsLeft    float64
 	KBsPerSecond   float64
@@ -61,7 +60,6 @@ type config struct {
 
 	// whether the output is expected to contain color codes
 	colorCodes bool
-	maxBytes   int64
 
 	// show rate of change in kB/sec or MB/sec
 	showBytes bool
@@ -322,7 +320,7 @@ func (p *ProgressBar) Add64(num int64) error {
 	}
 
 	// always update if show bytes/second or its/second
-	if updateBar || p.config.showIterationsPerSecond || p.config.maxBytes > 0 {
+	if updateBar || p.config.showIterationsPerSecond {
 		return p.render()
 	}
 
@@ -354,6 +352,22 @@ func (p *ProgressBar) GetMax() int {
 // Same as GetMax, but returns int64
 func (p *ProgressBar) GetMax64() int64 {
 	return p.config.max
+}
+
+// ChangeMax takes in a int
+// and changes the max value
+// of the progress bar
+func (p *ProgressBar) ChangeMax(newMax int) {
+	p.ChangeMax64(int64(newMax))
+}
+
+// ChangeMax64 is basically
+// the same as ChangeMax,
+// but takes in a int64
+// to avoid casting
+func (p *ProgressBar) ChangeMax64(newMax int64) {
+	p.config.max = newMax
+	p.Add(0) // re-render
 }
 
 // render renders the progress bar, updating the maximum
@@ -410,7 +424,6 @@ func (p *ProgressBar) State() State {
 	s := State{}
 	s.CurrentPercent = float64(p.state.currentNum) / float64(p.config.max)
 	s.CurrentBytes = p.state.currentBytes
-	s.MaxBytes = p.config.maxBytes
 	s.SecondsSince = time.Since(p.state.startTime).Seconds()
 	if p.state.currentNum > 0 {
 		s.SecondsLeft = s.SecondsSince / float64(p.state.currentNum) * (float64(p.config.max) - float64(p.state.currentNum))
