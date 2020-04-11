@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -320,7 +319,7 @@ func (p *ProgressBar) Add64(num int64) error {
 	}
 
 	// always update if show bytes/second or its/second
-	if updateBar || p.config.showIterationsPerSecond {
+	if updateBar || p.config.showIterationsPerSecond || p.config.showIterationsCount {
 		return p.render()
 	}
 
@@ -514,17 +513,13 @@ func renderProgressBar(c config, s state) (int, error) {
 	if c.predictTime {
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
 		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
-	} else {
-		// Give x out of y
-		leftBrac = strconv.Itoa(int(s.currentNum))
-		rightBrac = strconv.Itoa(int(c.max))
 	}
 
 	/*
 		Progress Bar format
 		Description % |------        |  (kb/s) (iteration count) (iteration rate) (predict time)
 	*/
-	if c.ignoreLength {
+	if c.ignoreLength || leftBrac == "" {
 		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s ",
 			c.description,
 			s.currentPercent,

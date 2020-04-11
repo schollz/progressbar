@@ -102,12 +102,19 @@ func ExampleOptionShowIts_count() {
 }
 
 func ExampleOptionShowIts() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionSetPredictTime(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
 	// Output:
-	// 10% |█         | (10 it/s) [1s:9s]
+	// 10% |█         | (10 it/s)
+}
+
+func ExampleOptionShowCountBigNumber() {
+	bar := NewOptions(10000, OptionSetWidth(10), OptionShowCount(), OptionSetPredictTime(false))
+	bar.Add(1)
+	// Output:
+	// 0% |          | (1/10000)
 }
 
 func ExampleOptionShowItsSlow() {
@@ -123,7 +130,7 @@ func ExampleOptionSetPredictTime() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
 	_ = bar.Add(10)
 	// Output:
-	// 10% |█         |  [10:100]
+	// 10% |█         |
 }
 
 func ExampleOptionChangeMax() {
@@ -131,7 +138,7 @@ func ExampleOptionChangeMax() {
 	bar.ChangeMax(50)
 	bar.Add(50)
 	// Output:
-	// 100% |██████████|  [50:50]
+	// 100% |██████████|
 }
 
 func ExampleIgnoreLength_WithIteration() {
@@ -252,7 +259,7 @@ func TestOptionSetPredictTime(t *testing.T) {
 
 	_ = bar.Add(2)
 	result := strings.TrimSpace(buf.String())
-	expect := "20% |██        |  [2:10]"
+	expect := "20% |██        |"
 
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
