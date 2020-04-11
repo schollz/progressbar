@@ -343,12 +343,12 @@ func New64(max int64) *ProgressBar {
 	return NewOptions64(max)
 }
 
-// Get the max of a bar
+// GetMax returns the max of a bar
 func (p *ProgressBar) GetMax() int {
 	return int(p.config.max)
 }
 
-// Same as GetMax, but returns int64
+// GetMax64 returns the current max
 func (p *ProgressBar) GetMax64() int64 {
 	return p.config.max
 }
