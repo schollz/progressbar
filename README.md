@@ -12,7 +12,7 @@ A very simple thread-safe progress bar which should work on every OS without pro
 ## Install
 
 ```
-go get -u github.com/schollz/progressbar/v3
+go get -u github.com/schollz/progressbar
 ```
 
 ## Usage 
