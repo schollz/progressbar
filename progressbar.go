@@ -78,6 +78,9 @@ type config struct {
 	// clear bar once finished
 	clearOnFinish bool
 
+	// spinnerType should be a number between 0-75
+	spinnerType int
+
 	onCompletion func()
 }
 
@@ -97,6 +100,13 @@ type Option func(p *ProgressBar)
 func OptionSetWidth(s int) Option {
 	return func(p *ProgressBar) {
 		p.config.width = s
+	}
+}
+
+// OptionSpinnerType sets the type of spinner used for indeterminate bars
+func OptionSpinnerType(spinnerType int) Option {
+	return func(p *ProgressBar) {
+		p.config.spinnerType = spinnerType
 	}
 }
 
@@ -205,11 +215,16 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
 			predictTime:      true,
+			spinnerType:      9,
 		},
 	}
 
 	for _, o := range options {
 		o(&b)
+	}
+
+	if b.config.spinnerType < 0 || b.config.spinnerType > 75 {
+		panic("invalid spinner type, must be between 0 and 75")
 	}
 
 	// ignoreLength if max bytes not known
@@ -522,11 +537,10 @@ func renderProgressBar(c config, s state) (int, error) {
 	*/
 	if c.ignoreLength {
 		str = fmt.Sprintf("\r%s %s %s ",
-			spinners[9][int(math.Mod(s.currentBytes, float64(len(spinners[9]))))],
+			spinners[c.spinnerType][int(math.Mod(s.currentBytes, float64(len(spinners[c.spinnerType]))))],
 			c.description,
 			bytesString,
 		)
-
 	} else if leftBrac == "" {
 		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s ",
 			c.description,
