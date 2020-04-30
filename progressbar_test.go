@@ -158,6 +158,23 @@ func ExampleIgnoreLength_WithIteration() {
 	// 50% |    █     | (5/-, 5 it/s)
 }
 
+func TestLength2(t *testing.T) {
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetDescription("who knows"),
+		OptionShowIts(),
+		OptionShowCount(),
+	)
+	bar.Reset()
+	for i := 0; i < 50; i++ {
+		time.Sleep(100 * time.Millisecond)
+		bar.Add(1)
+	}
+	if false {
+		t.Errorf("error")
+	}
+}
+
 func ExampleIgnoreLength_WithSpeed() {
 	/*
 		IgnoreLength test with iterations and count

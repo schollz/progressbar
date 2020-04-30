@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"regexp"
 	"strings"
@@ -519,7 +520,14 @@ func renderProgressBar(c config, s state) (int, error) {
 		Progress Bar format
 		Description % |------        |  (kb/s) (iteration count) (iteration rate) (predict time)
 	*/
-	if c.ignoreLength || leftBrac == "" {
+	if c.ignoreLength {
+		str = fmt.Sprintf("\r%s %s %s ",
+			spinners[9][int(math.Mod(s.currentBytes, float64(len(spinners[9]))))],
+			c.description,
+			bytesString,
+		)
+
+	} else if leftBrac == "" {
 		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s ",
 			c.description,
 			s.currentPercent,
