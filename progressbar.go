@@ -47,6 +47,8 @@ type state struct {
 	maxLineWidth int
 	currentBytes float64
 	finished     bool
+
+	spinnerVal int
 }
 
 type config struct {
@@ -311,6 +313,7 @@ func (p *ProgressBar) Add64(num int64) error {
 		p.state.currentNum += num
 	}
 
+	p.state.spinnerVal++
 	p.state.currentBytes += float64(num)
 
 	// reset the countdown timer every second to take rolling average
@@ -537,7 +540,7 @@ func renderProgressBar(c config, s state) (int, error) {
 	*/
 	if c.ignoreLength {
 		str = fmt.Sprintf("\r%s %s %s ",
-			spinners[c.spinnerType][int(math.Mod(s.currentBytes, float64(len(spinners[c.spinnerType]))))],
+			spinners[c.spinnerType][int(math.Round(math.Mod(float64(s.spinnerVal), float64(len(spinners[c.spinnerType])))))],
 			c.description,
 			bytesString,
 		)

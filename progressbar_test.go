@@ -192,7 +192,7 @@ func ExampleIgnoreLength_WithSpeed() {
 	bar.Add(11)
 
 	// Output:
-	// \  (0.011 kB/s)
+	// /  (0.011 kB/s)
 }
 
 func TestBar(t *testing.T) {
