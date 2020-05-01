@@ -31,9 +31,63 @@ which looks like:
 
 ```bash
  100% |████████████████████████████████████████| [1s:0s]
- ```
+```
 
 The times at the end show the elapsed time and the remaining time, respectively.
+
+## Progress bar with unknown length
+
+A progressbar with unknown length is a spinner. You can pass `-1` as the iterations to the bar and it will automatically convert it to a spinner with a customizable spinner type.
+
+```golang
+// basic bar
+bar = progressbar.NewOptions(-1,
+    progressbar.OptionSetDescription("indeterminate bar"),
+    progressbar.OptionSpinnerType(70),
+    progressbar.OptionSetWriter(os.Stderr),
+    progressbar.OptionShowIts(),
+    progressbar.OptionShowCount(),
+)
+for i := 0; i < 7000; i++ {
+    bar.Add(1)
+    time.Sleep(2 * time.Millisecond)
+}
+// Results in:
+// \ indeterminate bar (3969/-, 916 it/s)
+```
+
+### Progress for I/O operations
+
+The `progressbar` implements an `io.Writer` so it can automatically detect the number of bytes written to a stream, so you can use it as a progressbar for an `io.Reader`.
+
+```golang
+urlToGet := "https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz"
+req, _ := http.NewRequest("GET", urlToGet, nil)
+resp, _ := http.DefaultClient.Do(req)
+defer resp.Body.Close()
+
+f, _ := os.OpenFile("go1.12.5.linux-amd64.tar.gz", os.O_CREATE|os.O_WRONLY, 0644)
+defer f.Close()
+
+bar := progressbar.NewOptions(
+    int(resp.ContentLength),
+    progressbar.OptionSetDescription(urlToGet),
+    progressbar.OptionSetWriter(os.Stderr),
+    progressbar.OptionShowBytes(true),
+    progressbar.OptionThrottle(10*time.Millisecond),
+    progressbar.OptionShowCount(),
+    progressbar.OptionOnCompletion(func() {
+        fmt.Println(" done.")
+    }),
+)
+io.Copy(io.MultiWriter(f, bar), resp.Body)
+
+// Results in:
+// https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz 100% |██████████| (128/128 MB, 103.751 MB/s) [1s:0s] done.
+```
+
+See the tests for another example.
+
 
 ### Long running processes
 
@@ -77,30 +131,6 @@ result := strings.TrimSpace(buf.String())
 
 ```
 
-### Progress for I/O operations
-
-The `progressbar` implements an `io.Writer` so it can automatically detect the number of bytes written to a stream, so you can use it as a progressbar for an `io.Reader`.
-
-```golang
-urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
-req, _ := http.NewRequest("GET", urlToGet, nil)
-resp, _ := http.DefaultClient.Do(req)
-defer resp.Body.Close()
-
-var out io.Writer
-f, _ := os.OpenFile("croc_v4.1.4_Windows-64bit_GUI.zip", os.O_CREATE|os.O_WRONLY, 0644)
-out = f
-defer f.Close()
-
-bar := progressbar.NewOptions(
-    int(resp.ContentLength), 
-    progressbar.OptionShowBytes(true),
-)
-out = io.MultiWriter(out, bar)
-io.Copy(out, resp.Body)
-```
-
-See the tests for another example.
 
 
 ### Displaying Total Increment Over Predicted Time

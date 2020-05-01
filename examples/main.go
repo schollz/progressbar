@@ -12,26 +12,46 @@ import (
 )
 
 func main() {
-	fmt.Println("downloading go1.12.5.linux-amd64.tar.gz")
 	defer os.Remove("go1.12.5.linux-amd64.tar.gz")
+
 	urlToGet := "https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz"
 	req, _ := http.NewRequest("GET", urlToGet, nil)
 	resp, _ := http.DefaultClient.Do(req)
 	defer resp.Body.Close()
 
-	var out io.Writer
 	f, _ := os.OpenFile("go1.12.5.linux-amd64.tar.gz", os.O_CREATE|os.O_WRONLY, 0644)
-	out = f
 	defer f.Close()
 
 	bar := progressbar.NewOptions(
 		int(resp.ContentLength),
+		progressbar.OptionSetDescription(urlToGet),
+		progressbar.OptionSetWriter(os.Stderr),
 		progressbar.OptionShowBytes(true),
+		progressbar.OptionSetWidth(10),
 		progressbar.OptionThrottle(10*time.Millisecond),
+		progressbar.OptionShowCount(),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Println(" done.")
+		}),
 	)
-	out = io.MultiWriter(out, bar)
-	io.Copy(out, resp.Body)
-	fmt.Println("done")
+	io.Copy(io.MultiWriter(f, bar), resp.Body)
+
+	// basic bar
+	bar = progressbar.NewOptions(-1,
+		progressbar.OptionSetDescription("indeterminate bar"),
+		progressbar.OptionSetWriter(os.Stderr),
+		progressbar.OptionThrottle(100*time.Millisecond),
+		progressbar.OptionShowIts(),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSpinnerType(70),
+	)
+	bar.RenderBlank() // will show the progress bar
+	bar.Add(3000)
+	time.Sleep(1 * time.Second)
+	for i := 0; i < 7000; i++ {
+		bar.Add(1)
+		time.Sleep(2 * time.Millisecond)
+	}
 
 	// basic bar
 	bar = progressbar.NewOptions(10000,
