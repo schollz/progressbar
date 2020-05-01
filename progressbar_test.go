@@ -155,7 +155,7 @@ func ExampleIgnoreLength_WithIteration() {
 	bar.Add(5)
 
 	// Output:
-	// /  (5/-, 5 it/s)
+	// |  (5/-, 5 it/s)
 }
 
 func TestSpinnerType(t *testing.T) {
@@ -164,11 +164,11 @@ func TestSpinnerType(t *testing.T) {
 		OptionSetDescription("indeterminate spinner"),
 		OptionShowIts(),
 		OptionShowCount(),
-		OptionSpinnerType(1),
+		OptionSpinnerType(9),
 	)
 	bar.Reset()
 	for i := 0; i < 10; i++ {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(120 * time.Millisecond)
 		bar.Add(1)
 	}
 	if false {
@@ -192,7 +192,7 @@ func ExampleIgnoreLength_WithSpeed() {
 	bar.Add(11)
 
 	// Output:
-	// /  (0.011 kB/s)
+	// |  (0.011 kB/s)
 }
 
 func TestBar(t *testing.T) {
