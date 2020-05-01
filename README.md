@@ -41,7 +41,7 @@ A progressbar with unknown length is a spinner. You can pass `-1` as the iterati
 
 ```golang
 // basic bar
-bar = progressbar.NewOptions(-1,
+bar := progressbar.NewOptions(-1,
     progressbar.OptionSetDescription("indeterminate bar"),
     progressbar.OptionSpinnerType(70),
     progressbar.OptionSetWriter(os.Stderr),
@@ -52,9 +52,14 @@ for i := 0; i < 7000; i++ {
     bar.Add(1)
     time.Sleep(2 * time.Millisecond)
 }
-// Results in:
-// \ indeterminate bar (3969/-, 916 it/s)
 ```
+
+which looks like:
+
+```bash
+\ indeterminate bar (3969/-, 916 it/s)
+```
+
 
 ### Progress for I/O operations
 
@@ -81,12 +86,13 @@ bar := progressbar.NewOptions(
     }),
 )
 io.Copy(io.MultiWriter(f, bar), resp.Body)
-
-// Results in:
-// https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz 100% |██████████| (128/128 MB, 103.751 MB/s) [1s:0s] done.
 ```
 
-See the tests for another example.
+which looks like:
+
+```bash
+https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz 100% |██████████| (128/128 MB, 103.751 MB/s) [1s:0s] done.
+```
 
 
 ### Long running processes
