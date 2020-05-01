@@ -332,7 +332,7 @@ func TestReaderToBuffer(t *testing.T) {
 	defer resp.Body.Close()
 
 	buf := new(bytes.Buffer)
-	bar := NewOptions(int(resp.ContentLength), OptionShowBytes(true))
+	bar := NewOptions(int(resp.ContentLength), OptionShowBytes(true), OptionShowCount())
 	out := io.MultiWriter(buf, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)

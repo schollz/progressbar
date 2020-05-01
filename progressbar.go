@@ -479,6 +479,28 @@ func renderProgressBar(c config, s state) (int, error) {
 		saucer += saucerHead
 	}
 
+	// show iteration count in "current/total" iterations format
+	if c.showIterationsCount {
+		if bytesString == "" {
+			bytesString += "("
+		} else {
+			bytesString += ", "
+		}
+		if !c.ignoreLength {
+			if c.showBytes {
+				bytesString += fmt.Sprintf("%s/%s", humanizeBytes(s.currentBytes, false), humanizeBytes(float64(c.max), true))
+			} else {
+				bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
+			}
+		} else {
+			if c.showBytes {
+				bytesString += fmt.Sprintf("%s", humanizeBytes(s.currentBytes, true))
+			} else {
+				bytesString += fmt.Sprintf("%.0f/%s", s.currentBytes, "-")
+			}
+		}
+	}
+
 	// show rolling average rate in kB/sec or MB/sec
 	if c.showBytes {
 		if bytesString == "" {
@@ -491,20 +513,6 @@ func renderProgressBar(c config, s state) (int, error) {
 			bytesString += fmt.Sprintf("%0.3f MB/s", kbPerSecond/1024.0)
 		} else if kbPerSecond > 0 {
 			bytesString += fmt.Sprintf("%0.3f kB/s", kbPerSecond)
-		}
-	}
-
-	// show iteration count in "current/total" iterations format
-	if c.showIterationsCount {
-		if bytesString == "" {
-			bytesString += "("
-		} else {
-			bytesString += ", "
-		}
-		if !c.ignoreLength {
-			bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
-		} else {
-			bytesString += fmt.Sprintf("%.0f/%s", s.currentBytes, "-")
 		}
 	}
 
@@ -653,4 +661,28 @@ func average(xs []float64) float64 {
 		total += v
 	}
 	return total / float64(len(xs))
+}
+
+func humanizeBytes(s float64, withSuffix bool) string {
+	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
+	base := 1000.0
+	if s < 10 {
+		return fmt.Sprintf("%2.0f B", s)
+	}
+	e := math.Floor(logn(float64(s), base))
+	suffix := sizes[int(e)]
+	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
+	f := "%.0f%s"
+	if val < 10 {
+		f = "%.1f%s"
+	}
+	if !withSuffix {
+		suffix = ""
+	}
+
+	return fmt.Sprintf(f, val, suffix)
+}
+
+func logn(n, b float64) float64 {
+	return math.Log(n) / math.Log(b)
 }
