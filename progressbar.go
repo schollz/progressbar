@@ -288,6 +288,7 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 			fmt.Fprint(os.Stderr, "\n")
 		}),
 		OptionSpinnerType(14),
+		OptionFullWidth(),
 	)
 	bar.RenderBlank()
 	return bar
@@ -586,7 +587,7 @@ func renderProgressBar(c config, s state) (int, error) {
 		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
 	}
 
-	if c.fullWidth {
+	if c.fullWidth && !c.ignoreLength {
 		c.width = getWidth() - len(c.description) - 13 - len(bytesString) - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
@@ -762,14 +763,11 @@ type winsize struct {
 
 func getWidth() int {
 	ws := &winsize{}
-	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
+	syscall.Syscall(syscall.SYS_IOCTL,
 		uintptr(syscall.Stdin),
 		uintptr(syscall.TIOCGWINSZ),
 		uintptr(unsafe.Pointer(ws)))
 
-	if int(retCode) == -1 {
-		panic(errno)
-	}
 	width := int(uint(ws.Col))
 	if width < 1 || width > 200 {
 		return 80
