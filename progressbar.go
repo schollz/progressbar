@@ -9,7 +9,9 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/mitchellh/colorstring"
 )
@@ -81,6 +83,9 @@ type config struct {
 	// spinnerType should be a number between 0-75
 	spinnerType int
 
+	// fullWidth specifies whether to measure and set the bar to a specific width
+	fullWidth bool
+
 	onCompletion func()
 }
 
@@ -114,6 +119,13 @@ func OptionSpinnerType(spinnerType int) Option {
 func OptionSetTheme(t Theme) Option {
 	return func(p *ProgressBar) {
 		p.config.theme = t
+	}
+}
+
+// OptionFullWidth sets the bar to be full width
+func OptionFullWidth() Option {
+	return func(p *ProgressBar) {
+		p.config.fullWidth = true
 	}
 }
 
@@ -270,7 +282,7 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 		OptionSetWriter(os.Stderr),
 		OptionShowBytes(true),
 		OptionSetWidth(10),
-		OptionThrottle(10*time.Millisecond),
+		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
 		OptionOnCompletion(func() {
 			fmt.Fprint(os.Stderr, "\n")
@@ -293,13 +305,14 @@ func Default(max int64, description ...string) *ProgressBar {
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
 		OptionSetWidth(10),
-		OptionThrottle(10*time.Millisecond),
+		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
 		OptionShowIts(),
 		OptionOnCompletion(func() {
 			fmt.Fprint(os.Stderr, "\n")
 		}),
 		OptionSpinnerType(14),
+		OptionFullWidth(),
 	)
 	bar.RenderBlank()
 	return bar
@@ -513,21 +526,6 @@ func renderProgressBar(c config, s state) (int, error) {
 		averageRate = s.currentBytes / time.Since(s.startTime).Seconds()
 	}
 
-	if s.currentSaucerSize > 0 {
-		if c.ignoreLength {
-			saucer = strings.Repeat(c.theme.SaucerPadding, s.currentSaucerSize-1)
-		} else {
-			saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
-		}
-		saucerHead := c.theme.SaucerHead
-		if saucerHead == "" || s.currentSaucerSize == c.width {
-			// use the saucer for the saucer head if it hasn't been set
-			// to preserve backwards compatibility
-			saucerHead = c.theme.Saucer
-		}
-		saucer += saucerHead
-	}
-
 	// show iteration count in "current/total" iterations format
 	if c.showIterationsCount {
 		if bytesString == "" {
@@ -586,6 +584,25 @@ func renderProgressBar(c config, s state) (int, error) {
 	if c.predictTime {
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
 		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
+	}
+
+	if c.fullWidth {
+		c.width = getWidth() - len(c.description) - 13 - len(bytesString) - len(leftBrac) - len(rightBrac)
+		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
+	}
+	if s.currentSaucerSize > 0 {
+		if c.ignoreLength {
+			saucer = strings.Repeat(c.theme.SaucerPadding, s.currentSaucerSize-1)
+		} else {
+			saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
+		}
+		saucerHead := c.theme.SaucerHead
+		if saucerHead == "" || s.currentSaucerSize == c.width {
+			// use the saucer for the saucer head if it hasn't been set
+			// to preserve backwards compatibility
+			saucerHead = c.theme.Saucer
+		}
+		saucer += saucerHead
 	}
 
 	/*
@@ -734,4 +751,29 @@ func humanizeBytes(s float64, withSuffix bool) string {
 
 func logn(n, b float64) float64 {
 	return math.Log(n) / math.Log(b)
+}
+
+type winsize struct {
+	Row    uint16
+	Col    uint16
+	Xpixel uint16
+	Ypixel uint16
+}
+
+func getWidth() int {
+	ws := &winsize{}
+	retCode, _, errno := syscall.Syscall(syscall.SYS_IOCTL,
+		uintptr(syscall.Stdin),
+		uintptr(syscall.TIOCGWINSZ),
+		uintptr(unsafe.Pointer(ws)))
+
+	if int(retCode) == -1 {
+		panic(errno)
+	}
+	width := int(uint(ws.Col))
+	if width < 1 || width > 200 {
+		return 80
+	} else {
+		return width
+	}
 }
