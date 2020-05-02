@@ -256,6 +256,55 @@ func New(max int) *ProgressBar {
 	return NewOptions(max)
 }
 
+// DefaultBytes provides a progressbar to measure byte
+// throughput with recommended defaults.
+// Set maxBytes to -1 to use as a spinner.
+func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	bar := NewOptions64(
+		maxBytes,
+		OptionSetDescription(desc),
+		OptionSetWriter(os.Stderr),
+		OptionShowBytes(true),
+		OptionSetWidth(10),
+		OptionThrottle(10*time.Millisecond),
+		OptionShowCount(),
+		OptionOnCompletion(func() {
+			fmt.Fprint(os.Stderr, "\n")
+		}),
+		OptionSpinnerType(14),
+	)
+	bar.RenderBlank()
+	return bar
+}
+
+// Default provides a progressbar with recommended defaults.
+// Set max to -1 to use as a spinner.
+func Default(max int64, description ...string) *ProgressBar {
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	bar := NewOptions64(
+		max,
+		OptionSetDescription(desc),
+		OptionSetWriter(os.Stderr),
+		OptionSetWidth(10),
+		OptionThrottle(10*time.Millisecond),
+		OptionShowCount(),
+		OptionShowIts(),
+		OptionOnCompletion(func() {
+			fmt.Fprint(os.Stderr, "\n")
+		}),
+		OptionSpinnerType(14),
+	)
+	bar.RenderBlank()
+	return bar
+}
+
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
 	return p.render()

@@ -133,6 +133,16 @@ func ExampleOptionSetPredictTime() {
 	// 10% |█         |
 }
 
+func ExampleDefault() {
+	bar := Default(100)
+	for i := 0; i < 50; i++ {
+		bar.Add(1)
+		time.Sleep(10 * time.Millisecond)
+	}
+	// Output:
+	//
+}
+
 func ExampleOptionChangeMax() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
 	bar.ChangeMax(50)
@@ -361,7 +371,38 @@ func TestReaderToFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	bar := NewOptions(int(resp.ContentLength), OptionShowBytes(true))
+	bar := DefaultBytes(resp.ContentLength)
+	out := io.MultiWriter(f, bar)
+	_, err = io.Copy(out, resp.Body)
+	assert.Nil(t, err)
+	f.Sync()
+	f.Seek(0, 0)
+
+	md5, err := md5sum(f)
+	assert.Nil(t, err)
+	assert.Equal(t, "d441819a800f8c90825355dfbede7266", md5)
+}
+
+func TestReaderToFileUnknownLength(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	urlToGet := "https://dl.google.com/go/go1.14.1.src.tar.gz"
+	req, err := http.NewRequest("GET", urlToGet, nil)
+	assert.Nil(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+
+	f, err := ioutil.TempFile("", "progressbar_testfile")
+	if err != nil {
+		t.Fatal()
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	bar := DefaultBytes(-1, " downloading")
 	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
