@@ -114,6 +114,8 @@ Thanks [@tehstun](https://github.com/tehstun) for some great PRs!
 
 Thanks [@Benzammour](https://github.com/Benzammour) and [@haseth](https://github.com/haseth) for helping create v3!
 
+Thanks [@briandowns](https://github.com/briandowns) for compiling the list of spinners.
+
 ## License
 
 MIT
