@@ -9,9 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/mitchellh/colorstring"
 )
@@ -752,26 +750,4 @@ func humanizeBytes(s float64, withSuffix bool) string {
 
 func logn(n, b float64) float64 {
 	return math.Log(n) / math.Log(b)
-}
-
-type winsize struct {
-	Row    uint16
-	Col    uint16
-	Xpixel uint16
-	Ypixel uint16
-}
-
-func getWidth() int {
-	ws := &winsize{}
-	syscall.Syscall(syscall.SYS_IOCTL,
-		uintptr(syscall.Stdin),
-		uintptr(syscall.TIOCGWINSZ),
-		uintptr(unsafe.Pointer(ws)))
-
-	width := int(uint(ws.Col))
-	if width < 1 || width > 200 {
-		return 80
-	} else {
-		return width
-	}
 }
