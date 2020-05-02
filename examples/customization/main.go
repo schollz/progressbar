@@ -23,6 +23,6 @@ func main() {
 		}))
 	for i := 0; i < 1000; i++ {
 		bar.Add(1)
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 	}
 }
