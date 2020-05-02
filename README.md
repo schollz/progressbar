@@ -20,141 +20,80 @@ go get -u github.com/schollz/progressbar/v3
 ### Basic usage
 
 ```golang
-bar := progressbar.New(100)
+bar := progressbar.Default(100)
 for i := 0; i < 100; i++ {
     bar.Add(1)
-    time.Sleep(10 * time.Millisecond)
+    time.Sleep(40 * time.Millisecond)
 }
 ```
 
 which looks like:
 
-```bash
- 100% |████████████████████████████████████████| [1s:0s]
-```
+![Example of basic bar](examples/basic/basic.gif)
 
 The times at the end show the elapsed time and the remaining time, respectively.
 
-## Progress bar with unknown length
-
-A progressbar with unknown length is a spinner. You can pass `-1` as the iterations to the bar and it will automatically convert it to a spinner with a customizable spinner type.
-
-```golang
-// basic bar
-bar := progressbar.NewOptions(-1,
-    progressbar.OptionSetDescription("indeterminate bar"),
-    progressbar.OptionSpinnerType(70),
-    progressbar.OptionSetWriter(os.Stderr),
-    progressbar.OptionShowIts(),
-    progressbar.OptionShowCount(),
-)
-for i := 0; i < 7000; i++ {
-    bar.Add(1)
-    time.Sleep(2 * time.Millisecond)
-}
-```
-
-which looks like:
-
-```bash
-\ indeterminate bar (3969/-, 916 it/s)
-```
-
-
-### Progress for I/O operations
+### I/O operations
 
 The `progressbar` implements an `io.Writer` so it can automatically detect the number of bytes written to a stream, so you can use it as a progressbar for an `io.Reader`.
 
 ```golang
-urlToGet := "https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz"
-req, _ := http.NewRequest("GET", urlToGet, nil)
+req, _ := http.NewRequest("GET", "https://dl.google.com/go/go1.14.2.src.tar.gz", nil)
 resp, _ := http.DefaultClient.Do(req)
 defer resp.Body.Close()
 
-f, _ := os.OpenFile("go1.12.5.linux-amd64.tar.gz", os.O_CREATE|os.O_WRONLY, 0644)
+f, _ := os.OpenFile("go1.14.2.src.tar.gz", os.O_CREATE|os.O_WRONLY, 0644)
 defer f.Close()
 
-bar := progressbar.NewOptions(
-    int(resp.ContentLength),
-    progressbar.OptionSetDescription(urlToGet),
-    progressbar.OptionSetWriter(os.Stderr),
-    progressbar.OptionShowBytes(true),
-    progressbar.OptionThrottle(10*time.Millisecond),
-    progressbar.OptionShowCount(),
-    progressbar.OptionOnCompletion(func() {
-        fmt.Println(" done.")
-    }),
+bar := progressbar.DefaultBytes(
+    resp.ContentLength,
+    "downloading",
 )
 io.Copy(io.MultiWriter(f, bar), resp.Body)
 ```
 
 which looks like:
 
-```bash
-https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz 100% |██████████| (128/128 MB, 103.751 MB/s) [1s:0s] done.
-```
+![Example of download bar](examples/download/download.gif)
 
 
-### Long running processes
+### Progress bar with unknown length
 
-For long running processes, you might want to render from a 0% state.
+A progressbar with unknown length is a spinner. Any bar with less than 1 length will automatically convert it to a spinner with a customizable spinner type. For example, the above code can be run and set the `resp.ContentLength` to `0`.
+
+which looks like:
+
+![Example of download bar with unknown length](examples/download-unknown/download-unknown.gif)
+
+
+### Customization
+
+There is a lot of customization that you can do - change the writer, the color, the width, description, theme, etc. See [all the options](https://pkg.go.dev/github.com/schollz/progressbar/v3?tab=doc#Option).
 
 ```golang
-// Renders the bar right on construction
-bar := progressbar.NewOptions(100, progressbar.OptionSetRenderBlankState(true))
-```
-
-Alternatively, when you want to delay rendering, but still want to render a 0% state
-```golang
-bar := progressbar.NewOptions(100)
-
-// Render the current state, which is 0% in this case
-bar.RenderBlank()
-
-// Emulate work
-for i := 0; i < 10; i++ {
-    time.Sleep(10 * time.Minute)
-    bar.Add(10)
+bar := progressbar.NewOptions(1000,
+    progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
+    progressbar.OptionEnableColorCodes(true),
+    progressbar.OptionShowBytes(true),
+    progressbar.OptionSetWidth(15),
+    progressbar.OptionSetDescription("[cyan][1/3][reset] Writing moshable file..."),
+    progressbar.OptionSetTheme(progressbar.Theme{
+        Saucer:        "[green]=[reset]",
+        SaucerHead:    "[green]>[reset]",
+        SaucerPadding: " ",
+        BarStart:      "[",
+        BarEnd:        "]",
+    }))
+for i := 0; i < 1000; i++ {
+    bar.Add(1)
+    time.Sleep(5 * time.Millisecond)
 }
 ```
 
-### Use a custom writer
+which looks like:
 
-The default writer is standard output (os.Stdout), but you can set it to whatever satisfies io.Writer.
-```golang
-bar := NewOptions(
-    10,
-    OptionSetTheme(Theme{Saucer: "#", SaucerPadding: "-", BarStart: ">", BarEnd: "<"}),
-    OptionSetWidth(10),
-    OptionSetWriter(&buf),
-)
+![Example of customized bar](examples/customization/customization.gif)
 
-bar.Add(5)
-result := strings.TrimSpace(buf.String())
-
-// Result equals:
-// 50% >#####-----< [0s:0s]
-
-```
-
-
-
-### Displaying Total Increment Over Predicted Time
-
-By default the progress bar will attempt to predict the remaining amount of time left. This can be change to 
-just show the current increment over the total maximum amount set for the progress bar. Do this by using the
-`OptionSetPredictTime` option during progress bar creation.
-
-```golang
-bar := progressbar.NewOptions(100, progressbar.OptionSetPredictTime(false))
-bar.Add(20)
-
-// this result equals:
-// "20% |██        |  [20:100]"
-
-// default result equals:
-// "20% |██        |  [3s:15s]"
-```
 
 ## Contributing
 
