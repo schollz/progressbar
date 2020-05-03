@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/colorstring"
 )
 
@@ -656,7 +657,7 @@ func renderProgressBar(c config, s state) (int, error) {
 	// get the amount of runes in the string instead of the
 	// character count of the string, as some runes span multiple characters.
 	// see https://stackoverflow.com/a/12668840/2733724
-	stringWidth := len([]rune(cleanString))
+	stringWidth := runewidth.StringWidth(cleanString)
 
 	return stringWidth, writeString(c, str)
 }
