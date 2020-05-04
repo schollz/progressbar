@@ -609,6 +609,10 @@ func renderProgressBar(c config, s state) (int, error) {
 		Progress Bar format
 		Description % |------        |  (kb/s) (iteration count) (iteration rate) (predict time)
 	*/
+	repeatAmount := c.width - s.currentSaucerSize
+	if repeatAmount < 0 {
+		repeatAmount = 0
+	}
 	if c.ignoreLength {
 		str = fmt.Sprintf("\r%s %s %s ",
 			spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.counterTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))],
@@ -621,7 +625,7 @@ func renderProgressBar(c config, s state) (int, error) {
 			s.currentPercent,
 			c.theme.BarStart,
 			saucer,
-			strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
+			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 			c.theme.BarEnd,
 			bytesString,
 		)
@@ -631,7 +635,7 @@ func renderProgressBar(c config, s state) (int, error) {
 			s.currentPercent,
 			c.theme.BarStart,
 			saucer,
-			strings.Repeat(c.theme.SaucerPadding, c.width-s.currentSaucerSize),
+			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 			c.theme.BarEnd,
 			bytesString,
 			leftBrac,
