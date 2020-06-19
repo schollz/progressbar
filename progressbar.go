@@ -735,7 +735,7 @@ func average(xs []float64) float64 {
 
 func humanizeBytes(s float64, withSuffix bool) string {
 	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
-	base := 1000.0
+	base := 1024.0
 	if s < 10 {
 		return fmt.Sprintf("%2.0f B", s)
 	}
