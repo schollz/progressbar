@@ -370,7 +370,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 }
 
 // String returns the current rendered version of the progress bar.
-// It will never return an empty string while the progress bar is running
+// It will never return an empty string while the progress bar is running.
 func (p *ProgressBar) String() string {
 	return p.state.rendered
 }
