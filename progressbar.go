@@ -525,7 +525,7 @@ func (p *ProgressBar) render() error {
 	if !p.state.finished && p.state.currentNum >= p.config.max {
 		p.state.finished = true
 		if !p.config.clearOnFinish {
-			renderProgressBar(p.config, p.state)
+			renderProgressBar(p.config, &p.state)
 		}
 
 		if p.config.onCompletion != nil {
@@ -537,7 +537,7 @@ func (p *ProgressBar) render() error {
 	}
 
 	// then, re-render the current progress bar
-	w, err := renderProgressBar(p.config, p.state)
+	w, err := renderProgressBar(p.config, &p.state)
 	if err != nil {
 		return err
 	}
@@ -569,7 +569,7 @@ func (p *ProgressBar) State() State {
 // regex matching ansi escape codes
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
-func renderProgressBar(c config, s state) (int, error) {
+func renderProgressBar(c config, s *state) (int, error) {
 	leftBrac := ""
 	rightBrac := ""
 	saucer := ""
