@@ -57,6 +57,7 @@ type config struct {
 	theme                Theme
 	renderWithBlankState bool
 	description          string
+	iterationString      string
 	ignoreLength         bool // ignoreLength if max bytes not known
 
 	// whether the output is expected to contain color codes
@@ -178,6 +179,13 @@ func OptionShowIts() Option {
 	}
 }
 
+// OptionSetItsString sets what's displayed for interations a second. The default is "it" which would display: "it/s"
+func OptionSetItsString(iterationString string) Option {
+	return func(p *ProgressBar) {
+		p.config.iterationString = iterationString
+	}
+}
+
 // OptionThrottle will wait the specified duration before updating again. The default
 // duration is 0 seconds.
 func OptionThrottle(duration time.Duration) Option {
@@ -222,6 +230,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		config: config{
 			writer:           os.Stdout,
 			theme:            defaultTheme,
+			iterationString:  "it",
 			width:            40,
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
@@ -571,9 +580,9 @@ func renderProgressBar(c config, s state) (int, error) {
 			bytesString += ", "
 		}
 		if averageRate > 1 {
-			bytesString += fmt.Sprintf("%0.0f it/s", averageRate)
+			bytesString += fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString)
 		} else {
-			bytesString += fmt.Sprintf("%0.0f it/min", 60*averageRate)
+			bytesString += fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString)
 		}
 	}
 	if bytesString != "" {
