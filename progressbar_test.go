@@ -434,6 +434,25 @@ func TestConcurrency(t *testing.T) {
 	assert.Equal(t, expect, result)
 }
 
+func TestIterationNames(t *testing.T) {
+
+	b := Default(20)
+	tc := b.config
+
+	// Checking for the default iterations per second or "it/s"
+	if tc.iterationString != "it" {
+		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "it", tc.iterationString)
+	}
+
+	// Change the default "it/s" to provide context, downloads per second or "dl/s"
+	b = NewOptions(20, OptionSetItsString("dl"))
+	tc = b.config
+
+	if tc.iterationString != "dl" {
+		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "dl", tc.iterationString)
+	}
+}
+
 func md5sum(r io.Reader) (string, error) {
 	hash := md5.New()
 	_, err := io.Copy(hash, r)
