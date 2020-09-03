@@ -57,6 +57,17 @@ func ExampleProgressBar_basic() {
 	// 10% |█         |  [1s:9s]
 }
 
+func ExampleProgressBar_invisible() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionSetVisibility(false))
+	bar.Reset()
+	bar.RenderBlank()
+	fmt.Println("hello, world")
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	// Output:
+	// hello, world
+}
+
 func ExampleOptionThrottle() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionThrottle(100*time.Millisecond))
 	bar.Reset()

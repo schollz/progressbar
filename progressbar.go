@@ -86,6 +86,9 @@ type config struct {
 	// fullWidth specifies whether to measure and set the bar to a specific width
 	fullWidth bool
 
+	// invisible doesn't render the bar at all, useful for debugging
+	invisible bool
+
 	onCompletion func()
 }
 
@@ -119,6 +122,13 @@ func OptionSpinnerType(spinnerType int) Option {
 func OptionSetTheme(t Theme) Option {
 	return func(p *ProgressBar) {
 		p.config.theme = t
+	}
+}
+
+// OptionSetVisibility sets the visibility
+func OptionSetVisibility(visibility bool) Option {
+	return func(p *ProgressBar) {
+		p.config.invisible = !visibility
 	}
 }
 
@@ -236,6 +246,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			throttleDuration: 0 * time.Nanosecond,
 			predictTime:      true,
 			spinnerType:      9,
+			invisible:        false,
 		},
 	}
 
@@ -329,6 +340,9 @@ func Default(max int64, description ...string) *ProgressBar {
 
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
+	if p.config.invisible {
+		return nil
+	}
 	return p.render()
 }
 
@@ -369,6 +383,9 @@ func (p *ProgressBar) Set64(num int64) error {
 
 // Add64 will add the specified amount to the progressbar
 func (p *ProgressBar) Add64(num int64) error {
+	if p.config.invisible {
+		return nil
+	}
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
