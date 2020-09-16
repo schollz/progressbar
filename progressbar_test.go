@@ -216,6 +216,25 @@ func ExampleIgnoreLength_WithSpeed() {
 	// |  (0.011 kB/s)
 }
 
+func TestBarSmallBytes(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions64(100000000, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	for i := 1; i < 10; i++ {
+		time.Sleep(100 * time.Millisecond)
+		bar.Add(1000)
+	}
+	if !strings.Contains(buf.String(), "8.8 kB/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	for i := 1; i < 10; i++ {
+		time.Sleep(10 * time.Millisecond)
+		bar.Add(1000000)
+	}
+	if !strings.Contains(buf.String(), "8.6/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+}
+
 func TestBar(t *testing.T) {
 	bar := New(0)
 	if err := bar.Add(1); err == nil {

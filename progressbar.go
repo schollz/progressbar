@@ -52,6 +52,8 @@ type state struct {
 
 type config struct {
 	max                  int64 // max number of the counter
+	maxHumanized         string
+	maxHumanizedSuffix   string
 	width                int
 	writer               io.Writer
 	theme                Theme
@@ -264,6 +266,8 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		b.config.max = int64(b.config.width)
 		b.config.predictTime = false
 	}
+
+	b.config.maxHumanized, b.config.maxHumanizedSuffix = humanizeBytes(float64(b.config.max))
 
 	if b.config.renderWithBlankState {
 		b.RenderBlank()
@@ -561,13 +565,20 @@ func renderProgressBar(c config, s state) (int, error) {
 		}
 		if !c.ignoreLength {
 			if c.showBytes {
-				bytesString += fmt.Sprintf("%s/%s", humanizeBytes(s.currentBytes, false), humanizeBytes(float64(c.max), true))
+				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
+				if currentSuffix == c.maxHumanizedSuffix {
+					bytesString += fmt.Sprintf("%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
+				} else {
+					bytesString += fmt.Sprintf("%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
+
+				}
 			} else {
 				bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
 			}
 		} else {
 			if c.showBytes {
-				bytesString += fmt.Sprintf("%s", humanizeBytes(s.currentBytes, true))
+				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
+				bytesString += fmt.Sprintf("%s%s", currentHumanize, currentSuffix)
 			} else {
 				bytesString += fmt.Sprintf("%.0f/%s", s.currentBytes, "-")
 			}
@@ -759,24 +770,21 @@ func average(xs []float64) float64 {
 	return total / float64(len(xs))
 }
 
-func humanizeBytes(s float64, withSuffix bool) string {
+func humanizeBytes(s float64) (string, string) {
 	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
 	base := 1024.0
 	if s < 10 {
-		return fmt.Sprintf("%2.0f B", s)
+		return fmt.Sprintf("%2.0f", s), "B"
 	}
 	e := math.Floor(logn(float64(s), base))
 	suffix := sizes[int(e)]
 	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
-	f := "%.0f%s"
+	f := "%.0f"
 	if val < 10 {
-		f = "%.1f%s"
-	}
-	if !withSuffix {
-		suffix = ""
+		f = "%.1f"
 	}
 
-	return fmt.Sprintf(f, val, suffix)
+	return fmt.Sprintf(f, val), suffix
 }
 
 func logn(n, b float64) float64 {
