@@ -197,6 +197,33 @@ func TestSpinnerType(t *testing.T) {
 	}
 }
 
+func Test_IsFinished(t *testing.T) {
+	isCalled := false
+	bar := NewOptions(72, OptionOnCompletion(func() {
+		isCalled = true
+	}))
+
+	// Test1: If bar is not fully completed.
+	bar.Add(5)
+	if bar.IsFinished() || isCalled {
+		t.Errorf("Successfully tested bar is not yet finished.")
+	}
+
+	// Test2: Bar fully completed.
+	bar.Add(67)
+	if !bar.IsFinished() || !isCalled {
+		t.Errorf("Successfully tested bar is finished.")
+	}
+
+	// Test3: If increases maximum bytes error should be thrown and
+	// bar finished will remain false.
+	bar.Reset()
+	err := bar.Add(73)
+	if err == nil || bar.IsFinished() {
+		t.Errorf("Successfully got error when bytes increases max bytes, bar finished: %v", bar.IsFinished())
+	}
+}
+
 func ExampleIgnoreLength_WithSpeed() {
 	/*
 		IgnoreLength test with iterations and count

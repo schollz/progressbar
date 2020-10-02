@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/k0kubun/go-ansi"
@@ -8,6 +9,8 @@ import (
 )
 
 func main() {
+	doneCh := make(chan struct{})
+
 	bar := progressbar.NewOptions(1000,
 		progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
 		progressbar.OptionEnableColorCodes(true),
@@ -20,9 +23,20 @@ func main() {
 			SaucerPadding: " ",
 			BarStart:      "[",
 			BarEnd:        "]",
-		}))
-	for i := 0; i < 1000; i++ {
-		bar.Add(1)
-		time.Sleep(5 * time.Millisecond)
-	}
+		}),
+		progressbar.OptionOnCompletion(func() {
+			doneCh <- struct{}{}
+		}),
+	)
+
+	go func() {
+		for i := 0; i < 1000; i++ {
+			bar.Add(1)
+			time.Sleep(5 * time.Millisecond)
+		}
+	}()
+
+	// got notified that progress bar is complete.
+	<-doneCh
+	fmt.Println("\n ======= progress bar completed ==========\n")
 }

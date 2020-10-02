@@ -477,6 +477,11 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 	p.Add(0) // re-render
 }
 
+// IsFinished returns true if progreess bar is completed
+func (p *ProgressBar) IsFinished() bool {
+	return p.state.finished
+}
+
 // render renders the progress bar, updating the maximum
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
