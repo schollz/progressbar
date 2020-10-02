@@ -21,7 +21,6 @@ func BenchmarkRender(b *testing.B) {
 	bar := NewOptions64(100000000,
 		OptionSetWriter(os.Stderr),
 		OptionShowIts(),
-		OptionSetBytes(100000000),
 	)
 	for i := 0; i < b.N; i++ {
 		bar.Add(1)
@@ -58,6 +57,17 @@ func ExampleProgressBar_basic() {
 	// 10% |█         |  [1s:9s]
 }
 
+func ExampleProgressBar_invisible() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionSetVisibility(false))
+	bar.Reset()
+	bar.RenderBlank()
+	fmt.Println("hello, world")
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	// Output:
+	// hello, world
+}
+
 func ExampleOptionThrottle() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionThrottle(100*time.Millisecond))
 	bar.Reset()
@@ -67,12 +77,6 @@ func ExampleOptionThrottle() {
 	bar.Add(10)
 	// Output:
 	// 10% |█         |  [0s:1s]
-}
-
-func ExampleProgressBar_ChangeMax() {
-	bar := New(50)
-	bar.ChangeMax64(100)
-	// No output
 }
 
 func ExampleOptionClearOnFinish() {
@@ -99,15 +103,6 @@ func Example_xOutOfY() {
 	}
 }
 
-func ExampleOptionSetBytes() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
-	bar.Reset()
-	time.Sleep(1 * time.Second)
-	bar.Add(10)
-	// Output:
-	// 10% |█         | (1.0 kB/s) [1s:9s]
-}
-
 func ExampleOptionShowIts_count() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionShowCount())
 	bar.Reset()
@@ -118,19 +113,126 @@ func ExampleOptionShowIts_count() {
 }
 
 func ExampleOptionShowIts() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionSetPredictTime(false))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
 	// Output:
-	// 10% |█         | (10 it/s) [1s:9s]
+	// 10% |█         | (10 it/s)
+}
+
+func ExampleOptionShowCountBigNumber() {
+	bar := NewOptions(10000, OptionSetWidth(10), OptionShowCount(), OptionSetPredictTime(false))
+	bar.Add(1)
+	// Output:
+	// 0% |          | (1/10000)
+}
+
+func ExampleOptionShowItsSlow() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
+	bar.Reset()
+	time.Sleep(4 * time.Second)
+	bar.Add(1)
+	// Output:
+	// 1% |          | (15 it/min) [4s:6m36s]
 }
 
 func ExampleOptionSetPredictTime() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
 	_ = bar.Add(10)
 	// Output:
-	// 10% |█         |  [10:100]
+	// 10% |█         |
+}
+
+func ExampleDefault() {
+	bar := Default(100)
+	for i := 0; i < 50; i++ {
+		bar.Add(1)
+		time.Sleep(10 * time.Millisecond)
+	}
+	// Output:
+	//
+}
+
+func ExampleOptionChangeMax() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
+	bar.ChangeMax(50)
+	bar.Add(50)
+	// Output:
+	// 100% |██████████|
+}
+
+func ExampleIgnoreLength_WithIteration() {
+	/*
+		IgnoreLength test with iteration count and iteration rate
+	*/
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowIts(),
+		OptionShowCount(),
+	)
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(5)
+
+	// Output:
+	// |  (5/-, 5 it/s)
+}
+
+func TestSpinnerType(t *testing.T) {
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetDescription("indeterminate spinner"),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSpinnerType(9),
+	)
+	bar.Reset()
+	for i := 0; i < 10; i++ {
+		time.Sleep(120 * time.Millisecond)
+		bar.Add(1)
+	}
+	if false {
+		t.Errorf("error")
+	}
+}
+
+func ExampleIgnoreLength_WithSpeed() {
+	/*
+		IgnoreLength test with iterations and count
+	*/
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowBytes(true),
+	)
+
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	// since 10 is the width and we don't know the max bytes
+	// it will do a infinite scrolling.
+	bar.Add(11)
+
+	// Output:
+	// |  (0.011 kB/s)
+}
+
+func TestBarSmallBytes(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions64(100000000, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	for i := 1; i < 10; i++ {
+		time.Sleep(100 * time.Millisecond)
+		bar.Add(1000)
+	}
+	if !strings.Contains(buf.String(), "8.8 kB/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	for i := 1; i < 10; i++ {
+		time.Sleep(10 * time.Millisecond)
+		bar.Add(1000000)
+	}
+	if !strings.Contains(buf.String(), "8.6/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
 }
 
 func TestBar(t *testing.T) {
@@ -145,7 +247,7 @@ func TestBar(t *testing.T) {
 }
 
 func TestState(t *testing.T) {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetBytes(10000))
+	bar := NewOptions(100, OptionSetWidth(10))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -215,7 +317,7 @@ func TestOptionSetPredictTime(t *testing.T) {
 
 	_ = bar.Add(2)
 	result := strings.TrimSpace(buf.String())
-	expect := "20% |██        |  [2:10]"
+	expect := "20% |██        |"
 
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
@@ -234,12 +336,35 @@ func TestOptionSetPredictTime(t *testing.T) {
 	}
 }
 
+func TestIgnoreLength(t *testing.T) {
+	bar := NewOptions(
+		-1,
+		OptionSetWidth(100),
+	)
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+
+	state := bar.State()
+	if state.CurrentBytes != 10.0 {
+		t.Errorf("Number of bytes mismatched gotBytes %f wantBytes %f", state.CurrentBytes, 10.0)
+	}
+	if state.CurrentPercent != 0.1 {
+		t.Errorf("Percent of bar mismatched got %f want %f", state.CurrentPercent, 0.1)
+	}
+
+	kbPerSec := fmt.Sprintf("%2.2f", state.KBsPerSecond)
+	if kbPerSec != "0.01" {
+		t.Errorf("Speed mismatched got %s want %s", kbPerSec, "0.01")
+	}
+}
+
 func TestReaderToBuffer(t *testing.T) {
 	if testing.Short() {
 		t.SkipNow()
 	}
 
-	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+	urlToGet := "https://dl.google.com/go/go1.14.1.src.tar.gz"
 	req, err := http.NewRequest("GET", urlToGet, nil)
 	assert.Nil(t, err)
 	resp, err := http.DefaultClient.Do(req)
@@ -247,14 +372,14 @@ func TestReaderToBuffer(t *testing.T) {
 	defer resp.Body.Close()
 
 	buf := new(bytes.Buffer)
-	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
+	bar := NewOptions(int(resp.ContentLength), OptionShowBytes(true), OptionShowCount())
 	out := io.MultiWriter(buf, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
 
 	md5, err := md5sum(buf)
 	assert.Nil(t, err)
-	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
+	assert.Equal(t, "d441819a800f8c90825355dfbede7266", md5)
 }
 
 func TestReaderToFile(t *testing.T) {
@@ -262,7 +387,7 @@ func TestReaderToFile(t *testing.T) {
 		t.SkipNow()
 	}
 
-	urlToGet := "https://github.com/schollz/croc/releases/download/v4.1.4/croc_v4.1.4_Windows-64bit_GUI.zip"
+	urlToGet := "https://dl.google.com/go/go1.14.1.src.tar.gz"
 	req, err := http.NewRequest("GET", urlToGet, nil)
 	assert.Nil(t, err)
 	resp, err := http.DefaultClient.Do(req)
@@ -276,7 +401,7 @@ func TestReaderToFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
-	bar := NewOptions(int(resp.ContentLength), OptionSetBytes(int(resp.ContentLength)))
+	bar := DefaultBytes(resp.ContentLength)
 	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
@@ -285,7 +410,38 @@ func TestReaderToFile(t *testing.T) {
 
 	md5, err := md5sum(f)
 	assert.Nil(t, err)
-	assert.Equal(t, "1e496ef2beba6e2a5e4200cba72a5ad6", md5)
+	assert.Equal(t, "d441819a800f8c90825355dfbede7266", md5)
+}
+
+func TestReaderToFileUnknownLength(t *testing.T) {
+	if testing.Short() {
+		t.SkipNow()
+	}
+
+	urlToGet := "https://dl.google.com/go/go1.14.1.src.tar.gz"
+	req, err := http.NewRequest("GET", urlToGet, nil)
+	assert.Nil(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	assert.Nil(t, err)
+	defer resp.Body.Close()
+
+	f, err := ioutil.TempFile("", "progressbar_testfile")
+	if err != nil {
+		t.Fatal()
+	}
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	bar := DefaultBytes(-1, " downloading")
+	out := io.MultiWriter(f, bar)
+	_, err = io.Copy(out, resp.Body)
+	assert.Nil(t, err)
+	f.Sync()
+	f.Seek(0, 0)
+
+	md5, err := md5sum(f)
+	assert.Nil(t, err)
+	assert.Equal(t, "d441819a800f8c90825355dfbede7266", md5)
 }
 
 func TestConcurrency(t *testing.T) {
@@ -306,6 +462,25 @@ func TestConcurrency(t *testing.T) {
 	result := bar.state.currentNum
 	expect := int64(900)
 	assert.Equal(t, expect, result)
+}
+
+func TestIterationNames(t *testing.T) {
+
+	b := Default(20)
+	tc := b.config
+
+	// Checking for the default iterations per second or "it/s"
+	if tc.iterationString != "it" {
+		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "it", tc.iterationString)
+	}
+
+	// Change the default "it/s" to provide context, downloads per second or "dl/s"
+	b = NewOptions(20, OptionSetItsString("dl"))
+	tc = b.config
+
+	if tc.iterationString != "dl" {
+		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "dl", tc.iterationString)
+	}
 }
 
 func md5sum(r io.Reader) (string, error) {
