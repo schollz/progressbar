@@ -13,6 +13,7 @@ import (
 
 	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/colorstring"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // ProgressBar is a thread-safe, simple
@@ -629,7 +630,12 @@ func renderProgressBar(c config, s state) (int, error) {
 	}
 
 	if c.fullWidth && !c.ignoreLength {
-		c.width = getWidth() - len(c.description) - 13 - len(bytesString) - len(leftBrac) - len(rightBrac)
+		width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			return 0, err
+		}
+
+		c.width = width - 1 - len(c.description) - 13 - len(bytesString) - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if s.currentSaucerSize > 0 {
