@@ -635,7 +635,7 @@ func renderProgressBar(c config, s state) (int, error) {
 			return 0, err
 		}
 
-		c.width = width - 1 - len(c.description) - 13 - len(bytesString) - len(leftBrac) - len(rightBrac)
+		c.width = width - len(c.description) - 14 - len(bytesString) - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if s.currentSaucerSize > 0 {
