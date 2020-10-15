@@ -398,10 +398,12 @@ func (p *ProgressBar) Add64(num int64) error {
 		return errors.New("max must be greater than 0")
 	}
 
-	if p.config.ignoreLength {
-		p.state.currentNum = (p.state.currentNum + num) % p.config.max
-	} else {
-		p.state.currentNum += num
+	if p.state.currentNum < p.config.max {
+		if p.config.ignoreLength {
+			p.state.currentNum = (p.state.currentNum + num) % p.config.max
+		} else {
+			p.state.currentNum += num
+		}
 	}
 
 	p.state.currentBytes += float64(num)
