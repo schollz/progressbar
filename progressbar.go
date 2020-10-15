@@ -632,7 +632,7 @@ func renderProgressBar(c config, s state) (int, error) {
 	if c.fullWidth && !c.ignoreLength {
 		width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
 		if err != nil {
-			return 0, err
+			width = 80
 		}
 
 		c.width = width - len(c.description) - 14 - len(bytesString) - len(leftBrac) - len(rightBrac)
