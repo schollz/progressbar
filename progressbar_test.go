@@ -91,7 +91,7 @@ func ExampleProgressBar_Finish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Finish()
 	// Output:
-	// 100% |██████████|  [0s:0s]
+	// 100% |██████████|
 }
 
 func Example_xOutOfY() {
@@ -126,15 +126,6 @@ func ExampleOptionShowCountBigNumber() {
 	bar.Add(1)
 	// Output:
 	// 0% |          | (1/10000)
-}
-
-func ExampleOptionShowItsSlow() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
-	bar.Reset()
-	time.Sleep(4 * time.Second)
-	bar.Add(1)
-	// Output:
-	// 1% |          | (15 it/min) [4s:6m36s]
 }
 
 func ExampleOptionSetPredictTime() {
@@ -241,6 +232,25 @@ func ExampleIgnoreLength_WithSpeed() {
 
 	// Output:
 	// |  (0.011 kB/s)
+}
+
+func TestBarSlowAdd(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionSetWriter(&buf))
+	bar.Reset()
+	time.Sleep(3 * time.Second)
+	bar.Add(1)
+	if !strings.Contains(buf.String(), "1%") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "20 it/min") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "[3s:") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	// Output:
+	// 1% |          | (20 it/min) [3s:4m57s]
 }
 
 func TestBarSmallBytes(t *testing.T) {

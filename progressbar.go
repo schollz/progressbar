@@ -680,17 +680,29 @@ func renderProgressBar(c config, s state) (int, error) {
 			bytesString,
 		)
 	} else {
-		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
-			c.description,
-			s.currentPercent,
-			c.theme.BarStart,
-			saucer,
-			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-			c.theme.BarEnd,
-			bytesString,
-			leftBrac,
-			rightBrac,
-		)
+		if s.currentPercent == 100 {
+			str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s",
+				c.description,
+				s.currentPercent,
+				c.theme.BarStart,
+				saucer,
+				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
+				c.theme.BarEnd,
+				bytesString,
+			)
+		} else {
+			str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s [%s:%s]",
+				c.description,
+				s.currentPercent,
+				c.theme.BarStart,
+				saucer,
+				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
+				c.theme.BarEnd,
+				bytesString,
+				leftBrac,
+				rightBrac,
+			)
+		}
 	}
 
 	if c.colorCodes {
