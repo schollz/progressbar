@@ -745,6 +745,14 @@ type Reader struct {
 	bar *ProgressBar
 }
 
+// NewReader return a new Reader with a given progress bar.
+func NewReader(r io.Reader, bar *ProgressBar) Reader {
+	return Reader{
+		Reader: r,
+		bar:    bar,
+	}
+}
+
 // Read will read the data and add the number of bytes to the progressbar
 func (r *Reader) Read(p []byte) (n int, err error) {
 	n, err = r.Reader.Read(p)
