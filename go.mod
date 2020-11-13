@@ -7,8 +7,8 @@ require (
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
-	golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634 // indirect
+	golang.org/x/crypto v0.0.0-20201112155050-0c6587e931a9
+	golang.org/x/sys v0.0.0-20201113135734-0a15ea8d9b02 // indirect
 )
 
 go 1.13
