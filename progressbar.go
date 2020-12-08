@@ -571,6 +571,29 @@ func (p *ProgressBar) State() State {
 // regex matching ansi escape codes
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
+func getStringWidth(c config, str string, colorize bool) int {
+	if c.colorCodes {
+		// convert any color codes in the progress bar into the respective ANSI codes
+		str = colorstring.Color(str)
+	}
+
+	// the width of the string, if printed to the console
+	// does not include the carriage return character
+	cleanString := strings.Replace(str, "\r", "", -1)
+
+	if c.colorCodes {
+		// the ANSI codes for the colors do not take up space in the console output,
+		// so they do not count towards the output string width
+		cleanString = ansiRegex.ReplaceAllString(cleanString, "")
+	}
+
+	// get the amount of runes in the string instead of the
+	// character count of the string, as some runes span multiple characters.
+	// see https://stackoverflow.com/a/12668840/2733724
+	stringWidth := runewidth.StringWidth(cleanString)
+	return stringWidth
+}
+
 func renderProgressBar(c config, s state) (int, error) {
 	leftBrac := ""
 	rightBrac := ""
@@ -661,7 +684,7 @@ func renderProgressBar(c config, s state) (int, error) {
 			}
 		}
 
-		c.width = width - len(c.description) - 14 - len(bytesString) - len(leftBrac) - len(rightBrac)
+		c.width = width - getStringWidth(c, c.description, true) - 14 - len(bytesString) - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if s.currentSaucerSize > 0 {
@@ -733,26 +756,7 @@ func renderProgressBar(c config, s state) (int, error) {
 		// convert any color codes in the progress bar into the respective ANSI codes
 		str = colorstring.Color(str)
 	}
-
-	// the width of the string, if printed to the console
-	// does not include the carriage return character
-	cleanString := strings.Replace(str, "\r", "", -1)
-
-	if c.colorCodes {
-		// the ANSI codes for the colors do not take up space in the console output,
-		// so they do not count towards the output string width
-		cleanString = ansiRegex.ReplaceAllString(cleanString, "")
-	}
-
-	// get the amount of runes in the string instead of the
-	// character count of the string, as some runes span multiple characters.
-	// see https://stackoverflow.com/a/12668840/2733724
-	stringWidth := runewidth.StringWidth(cleanString)
-	if c.useANSICodes {
-		// append the "clear rest of line" ANSI escape sequence
-		str = str + "\033[0K"
-	}
-	return stringWidth, writeString(c, str)
+	return getStringWidth(c, str, false), writeString(c, str)
 }
 
 func clearProgressBar(c config, s state) error {
