@@ -5,18 +5,6 @@
 [![coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](https://gocover.io/github.com/schollz/progressbar)
 [![godocs](https://godoc.org/github.com/schollz/progressbar?status.svg)](https://godoc.org/github.com/schollz/progressbar) 
 
-## Fork Changes
-This fork adds a `String()` method to the progress bar, as well as other code that makes it easy to just get the rendered progress bar, but not output it anywhere.
-
-### Other new methods
-- Silent functions that initalize a progress bar that doesn't output anywhere
-  - `DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar`
-  - `DefaultSilent(max int64, description ...string) *ProgressBar`
-
-It is currently **not merged** with the original project.
-
-# Original README
-
 A very simple thread-safe progress bar which should work on every OS without problems. I needed a progressbar for [croc](https://github.com/schollz/croc) and everything I tried had problems, so I made another one. In order to be OS agnostic I do not plan to support [multi-line outputs](https://github.com/schollz/progressbar/issues/6).
 
 
