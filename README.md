@@ -69,7 +69,7 @@ which looks like:
 
 ### Progress bar with unknown length
 
-A progressbar with unknown length is a spinner. Any bar with less than 1 length will automatically convert it to a spinner with a customizable spinner type. For example, the above code can be run and set the `resp.ContentLength` to `0`.
+A progressbar with unknown length is a spinner. Any bar with -1 length will automatically convert it to a spinner with a customizable spinner type. For example, the above code can be run and set the `resp.ContentLength` to `-1`.
 
 which looks like:
 

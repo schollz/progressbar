@@ -57,6 +57,17 @@ func ExampleProgressBar_basic() {
 	// 10% |█         |  [1s:9s]
 }
 
+func ExampleProgressBar_invisible() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionSetVisibility(false))
+	bar.Reset()
+	bar.RenderBlank()
+	fmt.Println("hello, world")
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	// Output:
+	// hello, world
+}
+
 func ExampleOptionThrottle() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionThrottle(100*time.Millisecond))
 	bar.Reset()
@@ -80,7 +91,7 @@ func ExampleProgressBar_Finish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Finish()
 	// Output:
-	// 100% |██████████|  [0s:0s]
+	// 100% |██████████|
 }
 
 func Example_xOutOfY() {
@@ -115,15 +126,6 @@ func ExampleOptionShowCountBigNumber() {
 	bar.Add(1)
 	// Output:
 	// 0% |          | (1/10000)
-}
-
-func ExampleOptionShowItsSlow() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts())
-	bar.Reset()
-	time.Sleep(4 * time.Second)
-	bar.Add(1)
-	// Output:
-	// 1% |          | (15 it/min) [4s:6m36s]
 }
 
 func ExampleOptionSetPredictTime() {
@@ -186,6 +188,33 @@ func TestSpinnerType(t *testing.T) {
 	}
 }
 
+func Test_IsFinished(t *testing.T) {
+	isCalled := false
+	bar := NewOptions(72, OptionOnCompletion(func() {
+		isCalled = true
+	}))
+
+	// Test1: If bar is not fully completed.
+	bar.Add(5)
+	if bar.IsFinished() || isCalled {
+		t.Errorf("Successfully tested bar is not yet finished.")
+	}
+
+	// Test2: Bar fully completed.
+	bar.Add(67)
+	if !bar.IsFinished() || !isCalled {
+		t.Errorf("Successfully tested bar is finished.")
+	}
+
+	// Test3: If increases maximum bytes error should be thrown and
+	// bar finished will remain false.
+	bar.Reset()
+	err := bar.Add(73)
+	if err == nil || bar.IsFinished() {
+		t.Errorf("Successfully got error when bytes increases max bytes, bar finished: %v", bar.IsFinished())
+	}
+}
+
 func ExampleIgnoreLength_WithSpeed() {
 	/*
 		IgnoreLength test with iterations and count
@@ -203,6 +232,44 @@ func ExampleIgnoreLength_WithSpeed() {
 
 	// Output:
 	// |  (0.011 kB/s)
+}
+
+func TestBarSlowAdd(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowIts(), OptionSetWriter(&buf))
+	bar.Reset()
+	time.Sleep(3 * time.Second)
+	bar.Add(1)
+	if !strings.Contains(buf.String(), "1%") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "20 it/min") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "[3s:") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	// Output:
+	// 1% |          | (20 it/min) [3s:4m57s]
+}
+
+func TestBarSmallBytes(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions64(100000000, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	for i := 1; i < 10; i++ {
+		time.Sleep(100 * time.Millisecond)
+		bar.Add(1000)
+	}
+	if !strings.Contains(buf.String(), "8.8 kB/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+	for i := 1; i < 10; i++ {
+		time.Sleep(10 * time.Millisecond)
+		bar.Add(1000000)
+	}
+	if !strings.Contains(buf.String(), "8.6/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
 }
 
 func TestBar(t *testing.T) {
@@ -432,6 +499,25 @@ func TestConcurrency(t *testing.T) {
 	result := bar.state.currentNum
 	expect := int64(900)
 	assert.Equal(t, expect, result)
+}
+
+func TestIterationNames(t *testing.T) {
+
+	b := Default(20)
+	tc := b.config
+
+	// Checking for the default iterations per second or "it/s"
+	if tc.iterationString != "it" {
+		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "it", tc.iterationString)
+	}
+
+	// Change the default "it/s" to provide context, downloads per second or "dl/s"
+	b = NewOptions(20, OptionSetItsString("dl"))
+	tc = b.config
+
+	if tc.iterationString != "dl" {
+		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "dl", tc.iterationString)
+	}
 }
 
 func md5sum(r io.Reader) (string, error) {
