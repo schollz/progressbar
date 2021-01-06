@@ -393,7 +393,7 @@ func (p *ProgressBar) Set(num int) error {
 // Set64 wil set the bar to a current number
 func (p *ProgressBar) Set64(num int64) error {
 	p.lock.Lock()
-	toAdd := int64(num) - p.state.currentNum
+	toAdd := num - int64(p.state.currentBytes)
 	p.lock.Unlock()
 	return p.Add64(toAdd)
 }
