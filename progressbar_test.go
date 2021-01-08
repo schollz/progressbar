@@ -167,7 +167,7 @@ func ExampleIgnoreLength_WithIteration() {
 	bar.Add(5)
 
 	// Output:
-	// |  (5/-, 5 it/s)
+	// -  (5/-, 5 it/s)
 }
 
 func TestSpinnerType(t *testing.T) {
@@ -231,7 +231,7 @@ func ExampleIgnoreLength_WithSpeed() {
 	bar.Add(11)
 
 	// Output:
-	// |  (0.011 kB/s)
+	// -  (0.011 kB/s)
 }
 
 func TestBarSlowAdd(t *testing.T) {
