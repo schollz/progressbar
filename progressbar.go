@@ -712,7 +712,7 @@ func renderProgressBar(c config, s state) (int, error) {
 	}
 	if c.ignoreLength {
 		str = fmt.Sprintf("\r%s %s %s ",
-			spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.counterTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))],
+			spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))],
 			c.description,
 			bytesString,
 		)
