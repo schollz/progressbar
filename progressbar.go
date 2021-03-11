@@ -764,11 +764,10 @@ func clearProgressBar(c config, s state) error {
 		// write the "clear current line" ANSI escape sequence
 		return writeString(c, "\033[2K\r")
 	}
-	// fill the current line with enough spaces
+	// fill the empty content
 	// to overwrite the progress bar and jump
 	// back to the beginning of the line
-	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", s.maxLineWidth))
-	return writeString(c, str)
+	return writeString(c, "\r")
 }
 
 func writeString(c config, str string) error {
