@@ -832,6 +832,11 @@ func (p *ProgressBar) Read(b []byte) (n int, err error) {
 	return
 }
 
+func (p *ProgressBar) Close() (err error) {
+	p.Finish()
+	return
+}
+
 func average(xs []float64) float64 {
 	total := 0.0
 	for _, v := range xs {
