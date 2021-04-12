@@ -813,6 +813,9 @@ func renderProgressBar(c config, s *state) (int, error) {
 		// convert any color codes in the progress bar into the respective ANSI codes
 		str = colorstring.Color(str)
 	}
+
+	s.rendered = str
+
 	return getStringWidth(c, str, false), writeString(c, str)
 }
 
