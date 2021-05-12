@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math"
 	"os"
 	"regexp"
@@ -49,6 +50,8 @@ type state struct {
 	maxLineWidth int
 	currentBytes float64
 	finished     bool
+
+	rendered string
 }
 
 type config struct {
@@ -330,6 +333,30 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 	return bar
 }
 
+// DefaultBytesSilent is the same as DefaultBytes, but does not output anywhere.
+// String() can be used to get the output instead.
+func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
+	// Mostly the same bar as DefaultBytes
+
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	bar := NewOptions64(
+		maxBytes,
+		OptionSetDescription(desc),
+		OptionSetWriter(ioutil.Discard),
+		OptionShowBytes(true),
+		OptionSetWidth(10),
+		OptionThrottle(65*time.Millisecond),
+		OptionShowCount(),
+		OptionSpinnerType(14),
+		OptionFullWidth(),
+	)
+	bar.RenderBlank()
+	return bar
+}
+
 // Default provides a progressbar with recommended defaults.
 // Set max to -1 to use as a spinner.
 func Default(max int64, description ...string) *ProgressBar {
@@ -353,6 +380,36 @@ func Default(max int64, description ...string) *ProgressBar {
 	)
 	bar.RenderBlank()
 	return bar
+}
+
+// DefaultSilent is the same as Default, but does not output anywhere.
+// String() can be used to get the output instead.
+func DefaultSilent(max int64, description ...string) *ProgressBar {
+	// Mostly the same bar as Default
+
+	desc := ""
+	if len(description) > 0 {
+		desc = description[0]
+	}
+	bar := NewOptions64(
+		max,
+		OptionSetDescription(desc),
+		OptionSetWriter(ioutil.Discard),
+		OptionSetWidth(10),
+		OptionThrottle(65*time.Millisecond),
+		OptionShowCount(),
+		OptionShowIts(),
+		OptionSpinnerType(14),
+		OptionFullWidth(),
+	)
+	bar.RenderBlank()
+	return bar
+}
+
+// String returns the current rendered version of the progress bar.
+// It will never return an empty string while the progress bar is running.
+func (p *ProgressBar) String() string {
+	return p.state.rendered
 }
 
 // RenderBlank renders the current bar state, you can use this to render a 0% state
@@ -520,7 +577,7 @@ func (p *ProgressBar) render() error {
 	if !p.state.finished && p.state.currentNum >= p.config.max {
 		p.state.finished = true
 		if !p.config.clearOnFinish {
-			renderProgressBar(p.config, p.state)
+			renderProgressBar(p.config, &p.state)
 		}
 
 		if p.config.onCompletion != nil {
@@ -539,7 +596,7 @@ func (p *ProgressBar) render() error {
 	}
 
 	// then, re-render the current progress bar
-	w, err := renderProgressBar(p.config, p.state)
+	w, err := renderProgressBar(p.config, &p.state)
 	if err != nil {
 		return err
 	}
@@ -594,7 +651,7 @@ func getStringWidth(c config, str string, colorize bool) int {
 	return stringWidth
 }
 
-func renderProgressBar(c config, s state) (int, error) {
+func renderProgressBar(c config, s *state) (int, error) {
 	leftBrac := ""
 	rightBrac := ""
 	saucer := ""
@@ -756,6 +813,9 @@ func renderProgressBar(c config, s state) (int, error) {
 		// convert any color codes in the progress bar into the respective ANSI codes
 		str = colorstring.Color(str)
 	}
+
+	s.rendered = str
+
 	return getStringWidth(c, str, false), writeString(c, str)
 }
 
@@ -829,6 +889,11 @@ func (p *ProgressBar) Write(b []byte) (n int, err error) {
 func (p *ProgressBar) Read(b []byte) (n int, err error) {
 	n = len(b)
 	p.Add(n)
+	return
+}
+
+func (p *ProgressBar) Close() (err error) {
+	p.Finish()
 	return
 }
 
