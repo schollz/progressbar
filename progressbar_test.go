@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -87,6 +88,7 @@ func ExampleOptionClearOnFinish() {
 	// Output:
 	// Finished
 }
+
 func ExampleProgressBar_Finish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Finish()
@@ -502,7 +504,6 @@ func TestConcurrency(t *testing.T) {
 }
 
 func TestIterationNames(t *testing.T) {
-
 	b := Default(20)
 	tc := b.config
 
@@ -526,12 +527,13 @@ func md5sum(r io.Reader) (string, error) {
 	return hex.EncodeToString(hash.Sum(nil)), err
 }
 
-func ExampleProgressBar_Describe() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
-	bar.Reset()
-	time.Sleep(1 * time.Second)
-	bar.Describe("performing axial adjustements")
+func TestProgressBar_Describe(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionSetWriter(&buf))
+	bar.Describe("performing axial adjustments")
 	bar.Add(10)
-	// Output:
-	// performing axial adjustements  10% |█         |  [1s:9s]
+	rawBuf := strconv.QuoteToASCII(buf.String())
+	if rawBuf != `"\r\r\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \r\rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
+		t.Errorf("wrong string: %s", rawBuf)
+	}
 }
