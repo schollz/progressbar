@@ -585,6 +585,13 @@ func (p *ProgressBar) render() error {
 		}
 	}
 	if p.state.finished {
+		// append a newline if we're leaving the progressbar around
+		if !p.config.clearOnFinish {
+			if _, err := p.config.writer.Write([]byte{'\n'}); err != nil {
+				return err
+			}
+		}
+
 		// when using ANSI codes we don't pre-clean the current line
 		if p.config.useANSICodes {
 			err := clearProgressBar(p.config, p.state)
@@ -679,7 +686,6 @@ func renderProgressBar(c config, s *state) (int, error) {
 					bytesString += fmt.Sprintf("%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
 				} else {
 					bytesString += fmt.Sprintf("%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
-
 				}
 			} else {
 				bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)

@@ -17,6 +17,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// clearBuffer simulates lines printed to the screen. Any carriage returns will
+// reset the beginning of the accumulated bytes, while any newline will write
+// accumulated bytes. Useful for testing against how the screen would appear
+type clearBuffer struct {
+	b []byte
+}
+
+func (c *clearBuffer) Write(p []byte) (int, error) {
+	start := 0
+	for i, b := range p {
+		switch b {
+		case '\r':
+			start = i + 1
+		case '\n':
+			c.b = append(c.b, p[start:i+1]...)
+			start = i + 1
+		}
+	}
+	if start < len(p) {
+		c.b = append(c.b, p[start:]...)
+	}
+	return len(p), nil
+}
+
+func (c *clearBuffer) String() string {
+	return string(c.b)
+}
+
 func BenchmarkRender(b *testing.B) {
 	bar := NewOptions64(100000000,
 		OptionSetWriter(os.Stderr),
@@ -87,6 +115,7 @@ func ExampleOptionClearOnFinish() {
 	// Output:
 	// Finished
 }
+
 func ExampleProgressBar_Finish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
 	bar.Finish()
@@ -502,7 +531,6 @@ func TestConcurrency(t *testing.T) {
 }
 
 func TestIterationNames(t *testing.T) {
-
 	b := Default(20)
 	tc := b.config
 
@@ -517,6 +545,28 @@ func TestIterationNames(t *testing.T) {
 
 	if tc.iterationString != "dl" {
 		t.Errorf("Expected %s to be %s, instead I got %s", "iterationString", "dl", tc.iterationString)
+	}
+}
+
+func TestNoClear(t *testing.T) {
+	buf := &clearBuffer{}
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetWriter(buf))
+	bar.Finish()
+	bar = NewOptions(100, OptionSetWidth(10), OptionSetWriter(buf))
+	bar.Finish()
+	want := " 100% |██████████| \n 100% |██████████| \n"
+	if buf.String() != want {
+		t.Errorf("Expected to see two lines:\n%s instead I got:\n%s\n", want, buf.String())
+	}
+
+	buf = &clearBuffer{}
+	bar = NewOptions(100, OptionSetWidth(10), OptionClearOnFinish(), OptionSetWriter(buf))
+	bar.Finish()
+	bar = NewOptions(100, OptionSetWidth(10), OptionClearOnFinish(), OptionSetWriter(buf))
+	bar.Finish()
+	want = ""
+	if buf.String() != want {
+		t.Errorf("Expected to see no lines, instead I got:\n%s\n", buf.String())
 	}
 }
 
