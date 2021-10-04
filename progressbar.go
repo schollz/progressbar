@@ -47,9 +47,10 @@ type state struct {
 	counterNumSinceLast int64
 	counterLastTenRates []float64
 
-	maxLineWidth int
-	currentBytes float64
-	finished     bool
+	prevLineWidth int
+	maxLineWidth  int
+	currentBytes  float64
+	finished      bool
 
 	rendered string
 }
@@ -565,12 +566,10 @@ func (p *ProgressBar) render() error {
 		return nil
 	}
 
-	if !p.config.useANSICodes {
-		// first, clear the existing progress bar
-		err := clearProgressBar(p.config, p.state)
-		if err != nil {
-			return err
-		}
+	// first, clear the existing progress bar
+	err := clearProgressBar(p.config, p.state)
+	if err != nil {
+		return err
 	}
 
 	// check if the progress bar is finished
@@ -741,6 +740,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			}
 		}
 
+		s.prevLineWidth = width
 		c.width = width - getStringWidth(c, c.description, true) - 14 - len(bytesString) - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
@@ -821,6 +821,28 @@ func renderProgressBar(c config, s *state) (int, error) {
 
 func clearProgressBar(c config, s state) error {
 	if c.useANSICodes {
+		if c.fullWidth && !c.ignoreLength {
+			width, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+
+			// if a terminal window was downsized just now, we need to clear more than one line
+			if err == nil && width < s.prevLineWidth {
+				stringsToClear := s.prevLineWidth / width
+				if s.prevLineWidth%width != 0 {
+					stringsToClear++
+				}
+
+				var clearSequence strings.Builder
+
+				for i := 0; i < stringsToClear-1; i++ {
+					clearSequence.WriteString("\033[2K\r")
+					clearSequence.WriteString("\033[1A\r")
+				}
+				clearSequence.WriteString("\033[2K\r")
+
+				return writeString(c, clearSequence.String())
+			}
+		}
+
 		// write the "clear current line" ANSI escape sequence
 		return writeString(c, "\033[2K\r")
 	}
