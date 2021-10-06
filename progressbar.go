@@ -324,7 +324,7 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
 		OptionOnCompletion(func() {
-			fmt.Fprint(os.Stderr, "\n")
+			fmt.Printf("\n")
 		}),
 		OptionSpinnerType(14),
 		OptionFullWidth(),
@@ -373,7 +373,7 @@ func Default(max int64, description ...string) *ProgressBar {
 		OptionShowCount(),
 		OptionShowIts(),
 		OptionOnCompletion(func() {
-			fmt.Fprint(os.Stderr, "\n")
+			fmt.Printf("\n")
 		}),
 		OptionSpinnerType(14),
 		OptionFullWidth(),
