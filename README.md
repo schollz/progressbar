@@ -1,6 +1,6 @@
 # progressbar
 
-[![travis](https://travis-ci.org/schollz/progressbar.svg?branch=master)](https://travis-ci.org/schollz/progressbar) 
+[![CI](https://github.com/kevholmes/progressbar/actions/workflows/ci.yml/badge.svg)](https://github.com/kevholmes/progressbar/actions/workflows/ci.yml)
 [![go report card](https://goreportcard.com/badge/github.com/schollz/progressbar)](https://goreportcard.com/report/github.com/schollz/progressbar) 
 [![coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](https://gocover.io/github.com/schollz/progressbar)
 [![godocs](https://godoc.org/github.com/schollz/progressbar?status.svg)](https://godoc.org/github.com/schollz/progressbar/v3) 
