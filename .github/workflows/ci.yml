@@ -1,10 +1,7 @@
 name: CI
 
 on:
-  # run on all PRs for any branch, provides 'Checks' ux in PRs
   pull_request:
-  # run on published releases, our build badge in README.md is based on this
-  # replaces travis-ci's existing workflow/badge
   push:
     branches: [master]
 
