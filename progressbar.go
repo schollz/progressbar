@@ -546,6 +546,11 @@ func (p *ProgressBar) ChangeMax(newMax int) {
 // to avoid casting
 func (p *ProgressBar) ChangeMax64(newMax int64) {
 	p.config.max = newMax
+
+	if p.config.showBytes {
+		p.config.maxHumanized, p.config.maxHumanizedSuffix = humanizeBytes(float64(p.config.max))
+	}
+
 	p.Add(0) // re-render
 }
 
