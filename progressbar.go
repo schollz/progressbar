@@ -729,7 +729,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 	// show time prediction in "current/total" seconds format
 	if c.predictTime {
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
-		rightBrac = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second).String()
+		rightBracNum := (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second)
+		if rightBracNum.Seconds() < 0 {
+			rightBracNum = 0 * time.Second
+		}
+		rightBrac = rightBracNum.String()
 	}
 
 	if c.fullWidth && !c.ignoreLength {
