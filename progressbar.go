@@ -39,6 +39,7 @@ type state struct {
 	currentPercent    int
 	lastPercent       int
 	currentSaucerSize int
+	isAltSaucerHead		bool
 
 	lastShown time.Time
 	startTime time.Time
@@ -104,6 +105,7 @@ type config struct {
 // Theme defines the elements of the bar
 type Theme struct {
 	Saucer        string
+	AltSaucerHead string
 	SaucerHead    string
 	SaucerPadding string
 	BarStart      string
@@ -655,6 +657,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 	leftBrac := ""
 	rightBrac := ""
 	saucer := ""
+	saucerHead := ""
 	bytesString := ""
 	str := ""
 
@@ -754,7 +757,15 @@ func renderProgressBar(c config, s *state) (int, error) {
 		} else {
 			saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
 		}
-		saucerHead := c.theme.SaucerHead
+
+		if c.theme.AltSaucerHead != "" && s.isAltSaucerHead {
+			saucerHead = c.theme.AltSaucerHead
+			s.isAltSaucerHead = false
+		} else {
+			saucerHead = c.theme.SaucerHead
+			s.isAltSaucerHead = true
+		}
+
 		if saucerHead == "" || s.currentSaucerSize == c.width {
 			// use the saucer for the saucer head if it hasn't been set
 			// to preserve backwards compatibility
