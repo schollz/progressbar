@@ -17,7 +17,8 @@ func main() {
 		progressbar.OptionSetWidth(50),
 		progressbar.OptionSetTheme(progressbar.Theme{
 			Saucer:        " ",
-			SaucerHead:    "[yellow]<[reset]",
+			AltSaucerHead: "[yellow]<[reset]",
+			SaucerHead:    "[yellow]-[reset]",
 			SaucerPadding: "[white]•",
 			BarStart:      "[blue]|[reset]",
 			BarEnd:        "[blue]|[reset]",
@@ -30,7 +31,7 @@ func main() {
 	go func() {
 		for i := 0; i < 1000; i++ {
 			bar.Add(1)
-			time.Sleep(5 * time.Millisecond)
+			time.Sleep(10 * time.Millisecond)
 		}
 	}()
 
