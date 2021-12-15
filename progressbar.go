@@ -39,7 +39,7 @@ type state struct {
 	currentPercent    int
 	lastPercent       int
 	currentSaucerSize int
-	isAltSaucerHead		bool
+	isAltSaucerHead   bool
 
 	lastShown time.Time
 	startTime time.Time
