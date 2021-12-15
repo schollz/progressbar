@@ -758,18 +758,17 @@ func renderProgressBar(c config, s *state) (int, error) {
 			saucer = strings.Repeat(c.theme.Saucer, s.currentSaucerSize-1)
 		}
 
+		// Check if an alternate saucer head is set for animation
 		if c.theme.AltSaucerHead != "" && s.isAltSaucerHead {
 			saucerHead = c.theme.AltSaucerHead
 			s.isAltSaucerHead = false
-		} else {
-			saucerHead = c.theme.SaucerHead
-			s.isAltSaucerHead = true
-		}
-
-		if saucerHead == "" || s.currentSaucerSize == c.width {
+		} else if c.theme.SaucerHead == "" || s.currentSaucerSize == c.width {
 			// use the saucer for the saucer head if it hasn't been set
 			// to preserve backwards compatibility
 			saucerHead = c.theme.Saucer
+		} else {
+			saucerHead = c.theme.SaucerHead
+			s.isAltSaucerHead = true
 		}
 		saucer += saucerHead
 	}
