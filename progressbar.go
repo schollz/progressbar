@@ -517,6 +517,7 @@ func (p *ProgressBar) Clear() error {
 // can be changed on the fly (as for a slow running process).
 func (p *ProgressBar) Describe(description string) {
 	p.config.description = description
+	p.RenderBlank()
 }
 
 // New64 returns a new ProgressBar
@@ -687,7 +688,6 @@ func renderProgressBar(c config, s *state) (int, error) {
 					bytesString += fmt.Sprintf("%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
 				} else {
 					bytesString += fmt.Sprintf("%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
-
 				}
 			} else {
 				bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
