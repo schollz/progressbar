@@ -76,6 +76,10 @@ type config struct {
 	showIterationsPerSecond bool
 	showIterationsCount     bool
 
+	// whether the progress bar should show elapsed time.
+	// always enabled if predictTime is true.
+	elapsedTime bool
+
 	// whether the progress bar should attempt to predict the finishing
 	// time of the progress based on the start time and the average
 	// number of seconds between  increments.
@@ -179,6 +183,13 @@ func OptionEnableColorCodes(colorCodes bool) Option {
 	}
 }
 
+// OptionSetElapsedTime will enable elapsed time. always enabled if OptionSetPredictTime is true.
+func OptionSetElapsedTime(elapsedTime bool) Option {
+	return func(p *ProgressBar) {
+		p.config.elapsedTime = elapsedTime
+	}
+}
+
 // OptionSetPredictTime will also attempt to predict the time remaining.
 func OptionSetPredictTime(predictTime bool) Option {
 	return func(p *ProgressBar) {
@@ -264,6 +275,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			width:            40,
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
+			elapsedTime:      true,
 			predictTime:      true,
 			spinnerType:      9,
 			invisible:        false,
@@ -735,13 +747,16 @@ func renderProgressBar(c config, s *state) (int, error) {
 	}
 
 	// show time prediction in "current/total" seconds format
-	if c.predictTime {
-		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
+	switch {
+	case c.predictTime:
 		rightBracNum := (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second)
 		if rightBracNum.Seconds() < 0 {
 			rightBracNum = 0 * time.Second
 		}
 		rightBrac = rightBracNum.String()
+		fallthrough
+	case c.elapsedTime:
+		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
 	}
 
 	if c.fullWidth && !c.ignoreLength {
@@ -787,12 +802,21 @@ func renderProgressBar(c config, s *state) (int, error) {
 		repeatAmount = 0
 	}
 	if c.ignoreLength {
-		str = fmt.Sprintf("\r%s %s %s ",
-			spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))],
-			c.description,
-			bytesString,
-		)
-	} else if leftBrac == "" {
+		if c.elapsedTime {
+			str = fmt.Sprintf("\r%s %s %s [%s] ",
+				spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))],
+				c.description,
+				bytesString,
+				leftBrac,
+			)
+		} else {
+			str = fmt.Sprintf("\r%s %s %s ",
+				spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))],
+				c.description,
+				bytesString,
+			)
+		}
+	} else if rightBrac == "" {
 		str = fmt.Sprintf("\r%s%4d%% %s%s%s%s %s ",
 			c.description,
 			s.currentPercent,
