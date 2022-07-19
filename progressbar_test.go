@@ -440,12 +440,35 @@ func TestReaderToFile(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
+	realStdout := os.Stdout
+	defer func() { os.Stdout = realStdout }()
+	r, fakeStdout, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = fakeStdout
+
 	bar := DefaultBytes(resp.ContentLength)
 	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
 	f.Sync()
 	f.Seek(0, 0)
+
+	if err := fakeStdout.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := r.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "", string(b))
 
 	md5, err := md5sum(f)
 	assert.Nil(t, err)
@@ -471,12 +494,35 @@ func TestReaderToFileUnknownLength(t *testing.T) {
 	defer os.Remove(f.Name())
 	defer f.Close()
 
+	realStdout := os.Stdout
+	defer func() { os.Stdout = realStdout }()
+	r, fakeStdout, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = fakeStdout
+
 	bar := DefaultBytes(-1, " downloading")
 	out := io.MultiWriter(f, bar)
 	_, err = io.Copy(out, resp.Body)
 	assert.Nil(t, err)
 	f.Sync()
 	f.Seek(0, 0)
+
+	if err := fakeStdout.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := ioutil.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := r.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "", string(b))
 
 	md5, err := md5sum(f)
 	assert.Nil(t, err)
