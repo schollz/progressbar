@@ -233,7 +233,7 @@ func ExampleIgnoreLength_WithSpeed() {
 	bar.Add(11)
 
 	// Output:
-	// -  (0.011 kB/s)
+	// -  (11 B/s)
 }
 
 func TestBarSlowAdd(t *testing.T) {
@@ -270,6 +270,16 @@ func TestBarSmallBytes(t *testing.T) {
 		bar.Add(1000000)
 	}
 	if !strings.Contains(buf.String(), "8.6/95 MB") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+}
+
+func TestBarFastBytes(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions64(1e8, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	time.Sleep(time.Millisecond)
+	bar.Add(1e7)
+	if !strings.Contains(buf.String(), " GB/s)") {
 		t.Errorf("wrong string: %s", buf.String())
 	}
 }

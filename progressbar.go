@@ -702,19 +702,15 @@ func renderProgressBar(c config, s *state) (int, error) {
 		}
 	}
 
-	// show rolling average rate in kB/sec or MB/sec
-	if c.showBytes {
+	// show rolling average rate
+	if c.showBytes && averageRate > 0 && !math.IsInf(averageRate, 1) {
 		if bytesString == "" {
 			bytesString += "("
 		} else {
 			bytesString += ", "
 		}
-		kbPerSecond := averageRate / 1024.0
-		if kbPerSecond > 1024.0 {
-			bytesString += fmt.Sprintf("%0.3f MB/s", kbPerSecond/1024.0)
-		} else if kbPerSecond > 0 {
-			bytesString += fmt.Sprintf("%0.3f kB/s", kbPerSecond)
-		}
+		currentHumanize, currentSuffix := humanizeBytes(averageRate)
+		bytesString += fmt.Sprintf("%s%s/s", currentHumanize, currentSuffix)
 	}
 
 	// show iterations rate
@@ -928,7 +924,7 @@ func humanizeBytes(s float64) (string, string) {
 	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
 	base := 1024.0
 	if s < 10 {
-		return fmt.Sprintf("%2.0f", s), "B"
+		return fmt.Sprintf("%2.0f", s), sizes[0]
 	}
 	e := math.Floor(logn(float64(s), base))
 	suffix := sizes[int(e)]
