@@ -50,7 +50,7 @@ func ExampleProgressBar_Set64() {
 }
 
 func ExampleProgressBar_basic() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
+	bar := NewOptions(100, OptionSetWidth(10))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -59,9 +59,8 @@ func ExampleProgressBar_basic() {
 }
 
 func ExampleProgressBar_invisible() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionSetVisibility(false))
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(true), OptionSetVisibility(false))
 	bar.Reset()
-	bar.RenderBlank()
 	fmt.Println("hello, world")
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -70,7 +69,7 @@ func ExampleProgressBar_invisible() {
 }
 
 func ExampleOptionThrottle() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionThrottle(100*time.Millisecond))
+	bar := NewOptions(100, OptionSetWidth(10), OptionThrottle(100*time.Millisecond))
 	bar.Reset()
 	bar.Add(5)
 	time.Sleep(150 * time.Millisecond)
@@ -81,7 +80,7 @@ func ExampleOptionThrottle() {
 }
 
 func ExampleOptionClearOnFinish() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionClearOnFinish())
+	bar := NewOptions(100, OptionSetWidth(10), OptionClearOnFinish())
 	bar.Reset()
 	bar.Finish()
 	fmt.Println("Finished")
@@ -90,7 +89,7 @@ func ExampleOptionClearOnFinish() {
 }
 
 func ExampleProgressBar_Finish() {
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false))
+	bar := NewOptions(100, OptionSetWidth(10))
 	bar.Finish()
 	// Output:
 	// 100% |██████████|
@@ -575,11 +574,21 @@ func md5sum(r io.Reader) (string, error) {
 
 func TestProgressBar_Describe(t *testing.T) {
 	buf := strings.Builder{}
-	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(false), OptionSetWriter(&buf))
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetWriter(&buf))
 	bar.Describe("performing axial adjustments")
 	bar.Add(10)
 	rawBuf := strconv.QuoteToASCII(buf.String())
 	if rawBuf != `"\r\r\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \r\rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
 		t.Errorf("wrong string: %s", rawBuf)
+	}
+}
+
+func TestRenderBlankStateWithThrottle(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(true), OptionThrottle(time.Millisecond), OptionSetWriter(&buf))
+	result := strings.TrimSpace(buf.String())
+	expect := "0% |          |  [0s:0s]"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }
