@@ -839,6 +839,9 @@ func renderProgressBar(c config, s *state) (int, error) {
 }
 
 func clearProgressBar(c config, s state) error {
+	if s.maxLineWidth == 0 {
+		return nil
+	}
 	if c.useANSICodes {
 		// write the "clear current line" ANSI escape sequence
 		return writeString(c, "\033[2K\r")
@@ -846,7 +849,7 @@ func clearProgressBar(c config, s state) error {
 	// fill the empty content
 	// to overwrite the progress bar and jump
 	// back to the beginning of the line
-	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", s.maxLineWidth))
+	str := fmt.Sprintf("\r%s", strings.Repeat(" ", s.maxLineWidth))
 	return writeString(c, str)
 	// the following does not show correctly if the previous line is longer than subsequent line
 	// return writeString(c, "\r")
