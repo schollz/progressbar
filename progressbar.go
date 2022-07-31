@@ -317,7 +317,7 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	bar := NewOptions64(
+	return NewOptions64(
 		maxBytes,
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
@@ -330,9 +330,8 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 		}),
 		OptionSpinnerType(14),
 		OptionFullWidth(),
+		OptionSetRenderBlankState(true),
 	)
-	bar.RenderBlank()
-	return bar
 }
 
 // DefaultBytesSilent is the same as DefaultBytes, but does not output anywhere.
@@ -344,7 +343,7 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	bar := NewOptions64(
+	return NewOptions64(
 		maxBytes,
 		OptionSetDescription(desc),
 		OptionSetWriter(ioutil.Discard),
@@ -355,8 +354,6 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 		OptionSpinnerType(14),
 		OptionFullWidth(),
 	)
-	bar.RenderBlank()
-	return bar
 }
 
 // Default provides a progressbar with recommended defaults.
@@ -366,7 +363,7 @@ func Default(max int64, description ...string) *ProgressBar {
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	bar := NewOptions64(
+	return NewOptions64(
 		max,
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
@@ -379,9 +376,8 @@ func Default(max int64, description ...string) *ProgressBar {
 		}),
 		OptionSpinnerType(14),
 		OptionFullWidth(),
+		OptionSetRenderBlankState(true),
 	)
-	bar.RenderBlank()
-	return bar
 }
 
 // DefaultSilent is the same as Default, but does not output anywhere.
@@ -393,7 +389,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	bar := NewOptions64(
+	return NewOptions64(
 		max,
 		OptionSetDescription(desc),
 		OptionSetWriter(ioutil.Discard),
@@ -404,8 +400,6 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 		OptionSpinnerType(14),
 		OptionFullWidth(),
 	)
-	bar.RenderBlank()
-	return bar
 }
 
 // String returns the current rendered version of the progress bar.
@@ -418,6 +412,9 @@ func (p *ProgressBar) String() string {
 func (p *ProgressBar) RenderBlank() error {
 	if p.config.invisible {
 		return nil
+	}
+	if p.state.currentNum == 0 {
+		p.state.lastShown = time.Time{}
 	}
 	return p.render()
 }
@@ -517,7 +514,10 @@ func (p *ProgressBar) Clear() error {
 // can be changed on the fly (as for a slow running process).
 func (p *ProgressBar) Describe(description string) {
 	p.config.description = description
-	p.RenderBlank()
+	if p.config.invisible {
+		return
+	}
+	p.render()
 }
 
 // New64 returns a new ProgressBar
@@ -557,7 +557,7 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 	p.Add(0) // re-render
 }
 
-// IsFinished returns true if progreess bar is completed
+// IsFinished returns true if progress bar is completed
 func (p *ProgressBar) IsFinished() bool {
 	return p.state.finished
 }
@@ -671,7 +671,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 	if len(s.counterLastTenRates) == 0 || s.finished {
 		// if no average samples, or if finished,
 		// then average rate should be the total rate
-		averageRate = s.currentBytes / time.Since(s.startTime).Seconds()
+		if t := time.Since(s.startTime).Seconds(); t > 0 {
+			averageRate = s.currentBytes / t
+		} else {
+			averageRate = 0
+		}
 	}
 
 	// show iteration count in "current/total" iterations format
