@@ -168,7 +168,7 @@ func ExampleIgnoreLength_WithIteration() {
 	bar.Add(5)
 
 	// Output:
-	// -  (5/-, 5 it/s)
+	// -  (5/-, 5 it/s) [1s]
 }
 
 func TestSpinnerType(t *testing.T) {
@@ -232,7 +232,7 @@ func ExampleIgnoreLength_WithSpeed() {
 	bar.Add(11)
 
 	// Output:
-	// -  (11 B/s)
+	// -  (11 B/s) [1s]
 }
 
 func TestBarSlowAdd(t *testing.T) {
@@ -382,6 +382,24 @@ func TestOptionSetPredictTime(t *testing.T) {
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
+}
+
+func TestOptionSetElapsedTime(t *testing.T) {
+	/*
+		IgnoreLength test with iteration count and iteration rate
+	*/
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSetElapsedTime(false),
+	)
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(5)
+
+	// Output:
+	// -  (5/-, 5 it/s)
 }
 
 func TestIgnoreLength(t *testing.T) {
