@@ -19,7 +19,7 @@ import (
 )
 
 func BenchmarkRender(b *testing.B) {
-	bar := NewOptions64(100000000,
+	bar := NewOptions(100000000,
 		OptionSetWriter(os.Stderr),
 		OptionShowIts(),
 	)
@@ -256,7 +256,7 @@ func TestBarSlowAdd(t *testing.T) {
 
 func TestBarSmallBytes(t *testing.T) {
 	buf := strings.Builder{}
-	bar := NewOptions64(100000000, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	bar := NewOptions(100000000, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
 	for i := 1; i < 10; i++ {
 		time.Sleep(100 * time.Millisecond)
 		bar.Add(1000)
@@ -275,7 +275,7 @@ func TestBarSmallBytes(t *testing.T) {
 
 func TestBarFastBytes(t *testing.T) {
 	buf := strings.Builder{}
-	bar := NewOptions64(1e8, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	bar := NewOptions(int(1e8), OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
 	time.Sleep(time.Millisecond)
 	bar.Add(1e7)
 	if !strings.Contains(buf.String(), " GB/s)") {

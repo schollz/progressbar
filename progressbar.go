@@ -260,12 +260,7 @@ func OptionUseANSICodes(val bool) Option {
 var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
 
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
-func NewOptions(max int, options ...Option) *ProgressBar {
-	return NewOptions64(int64(max), options...)
-}
-
-// NewOptions64 constructs a new instance of ProgressBar, with any options you specify
-func NewOptions64(max int64, options ...Option) *ProgressBar {
+func NewOptions[V int | int64](max V, options ...Option) *ProgressBar {
 	b := ProgressBar{
 		state: getBasicState(),
 		config: config{
@@ -273,7 +268,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			theme:            defaultTheme,
 			iterationString:  "it",
 			width:            40,
-			max:              max,
+			max:              int64(max),
 			throttleDuration: 0 * time.Nanosecond,
 			elapsedTime:      true,
 			predictTime:      true,
@@ -317,19 +312,19 @@ func getBasicState() state {
 
 // New returns a new ProgressBar
 // with the specified maximum
-func New(max int) *ProgressBar {
+func New[V int | int64](max V) *ProgressBar {
 	return NewOptions(max)
 }
 
 // DefaultBytes provides a progressbar to measure byte
 // throughput with recommended defaults.
 // Set maxBytes to -1 to use as a spinner.
-func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
+func DefaultBytes[V int | int64](maxBytes V, description ...string) *ProgressBar {
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	return NewOptions64(
+	return NewOptions(
 		maxBytes,
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
@@ -348,14 +343,14 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 
 // DefaultBytesSilent is the same as DefaultBytes, but does not output anywhere.
 // String() can be used to get the output instead.
-func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
+func DefaultBytesSilent[V int | int64](maxBytes V, description ...string) *ProgressBar {
 	// Mostly the same bar as DefaultBytes
 
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	return NewOptions64(
+	return NewOptions(
 		maxBytes,
 		OptionSetDescription(desc),
 		OptionSetWriter(ioutil.Discard),
@@ -370,12 +365,12 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 
 // Default provides a progressbar with recommended defaults.
 // Set max to -1 to use as a spinner.
-func Default(max int64, description ...string) *ProgressBar {
+func Default[V int | int64](max V, description ...string) *ProgressBar {
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	return NewOptions64(
+	return NewOptions(
 		max,
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
@@ -394,14 +389,14 @@ func Default(max int64, description ...string) *ProgressBar {
 
 // DefaultSilent is the same as Default, but does not output anywhere.
 // String() can be used to get the output instead.
-func DefaultSilent(max int64, description ...string) *ProgressBar {
+func DefaultSilent[V int | int64](max V, description ...string) *ProgressBar {
 	// Mostly the same bar as Default
 
 	desc := ""
 	if len(description) > 0 {
 		desc = description[0]
 	}
-	return NewOptions64(
+	return NewOptions(
 		max,
 		OptionSetDescription(desc),
 		OptionSetWriter(ioutil.Discard),
@@ -530,12 +525,6 @@ func (p *ProgressBar) Describe(description string) {
 		return
 	}
 	p.render()
-}
-
-// New64 returns a new ProgressBar
-// with the specified maximum
-func New64(max int64) *ProgressBar {
-	return NewOptions64(max)
 }
 
 // GetMax returns the max of a bar
