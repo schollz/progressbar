@@ -1,12 +1,15 @@
 # progressbar
 
 [![CI](https://github.com/schollz/progressbar/actions/workflows/ci.yml/badge.svg?branch=master&event=push)](https://github.com/schollz/progressbar/actions/workflows/ci.yml)
-[![go report card](https://goreportcard.com/badge/github.com/schollz/progressbar)](https://goreportcard.com/report/github.com/schollz/progressbar) 
+[![go report card](https://goreportcard.com/badge/github.com/schollz/progressbar)](https://goreportcard.com/report/github.com/schollz/progressbar)
 [![coverage](https://img.shields.io/badge/coverage-84%25-brightgreen.svg)](https://gocover.io/github.com/schollz/progressbar)
-[![godocs](https://godoc.org/github.com/schollz/progressbar?status.svg)](https://godoc.org/github.com/schollz/progressbar/v3) 
+[![godocs](https://godoc.org/github.com/schollz/progressbar?status.svg)](https://godoc.org/github.com/schollz/progressbar/v3)
 
 A very simple thread-safe progress bar which should work on every OS without problems. I needed a progressbar for [croc](https://github.com/schollz/croc) and everything I tried had problems, so I made another one. In order to be OS agnostic I do not plan to support [multi-line outputs](https://github.com/schollz/progressbar/issues/6).
 
+## Requires
+
+Progressbar V4 requires Go version v1.18 or later.
 
 ## Install
 
@@ -14,7 +17,7 @@ A very simple thread-safe progress bar which should work on every OS without pro
 go get -u github.com/schollz/progressbar/v3
 ```
 
-## Usage 
+## Usage
 
 ### Basic usage
 
