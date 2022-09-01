@@ -606,7 +606,7 @@ func TestProgressBar_Describe(t *testing.T) {
 	bar.Describe("performing axial adjustments")
 	bar.Add(10)
 	rawBuf := strconv.QuoteToASCII(buf.String())
-	if rawBuf != `"\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
+	if rawBuf != `"\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \r\rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
 		t.Errorf("wrong string: %s", rawBuf)
 	}
 }
