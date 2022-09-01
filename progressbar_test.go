@@ -402,6 +402,26 @@ func TestOptionSetElapsedTime(t *testing.T) {
 	// -  (5/-, 5 it/s)
 }
 
+func TestShowElapsedTimeOnFinish(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(10,
+		OptionShowElapsedTimeOnFinish(),
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+	)
+
+	bar.Reset()
+	time.Sleep(3 * time.Second)
+	bar.Add(10)
+
+	result := strings.TrimSpace(buf.String())
+	expect := "100% |██████████|  [3s]"
+
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
 func TestIgnoreLength(t *testing.T) {
 	bar := NewOptions(
 		-1,
@@ -606,7 +626,7 @@ func TestProgressBar_Describe(t *testing.T) {
 	bar.Describe("performing axial adjustments")
 	bar.Add(10)
 	rawBuf := strconv.QuoteToASCII(buf.String())
-	if rawBuf != `"\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
+	if rawBuf != `"\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \r\rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
 		t.Errorf("wrong string: %s", rawBuf)
 	}
 }
