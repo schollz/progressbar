@@ -402,6 +402,26 @@ func TestOptionSetElapsedTime(t *testing.T) {
 	// -  (5/-, 5 it/s)
 }
 
+func TestShowElapsedTimeOnFinish(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(10,
+		OptionShowElapsedTimeOnFinish(),
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+	)
+
+	bar.Reset()
+	time.Sleep(3 * time.Second)
+	bar.Add(10)
+
+	result := strings.TrimSpace(buf.String())
+	expect := "100% |██████████|  [3s]"
+
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
 func TestIgnoreLength(t *testing.T) {
 	bar := NewOptions(
 		-1,
