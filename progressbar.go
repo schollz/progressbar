@@ -747,8 +747,10 @@ func renderProgressBar(c config, s *state) (int, error) {
 		}
 		if averageRate > 1 {
 			bytesString += fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString)
-		} else {
+		} else if averageRate*60 > 1 {
 			bytesString += fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString)
+		} else {
+			bytesString += fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString)
 		}
 	}
 	if bytesString != "" {
