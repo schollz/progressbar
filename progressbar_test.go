@@ -136,6 +136,20 @@ func ExampleOptionSetPredictTime() {
 	// 10% |█         |
 }
 
+func ExampleOptionShowDescriptionAtLineEnd() {
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowDescriptionAtLineEnd(), OptionSetDescription("hello"))
+	_ = bar.Add(10)
+	// Output:
+	// 10% |█         |  [0s:0s] hello
+}
+
+func ExampleOptionShowDescriptionAtLineEnd_WithSpinner() {
+	bar := NewOptions(-1, OptionSetWidth(10), OptionShowDescriptionAtLineEnd(), OptionSetDescription("hello"))
+	_ = bar.Add(1)
+	// Output:
+	// |  [0s] hello
+}
+
 func ExampleDefault() {
 	bar := Default(100)
 	for i := 0; i < 50; i++ {
