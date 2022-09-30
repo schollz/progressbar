@@ -416,6 +416,38 @@ func TestOptionSetElapsedTime(t *testing.T) {
 	// -  (5/-, 5 it/s)
 }
 
+func ExampleOptionUseCustomBytesShow() {
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSetElapsedTime(false), OptionUseCustomBytesShow(func(f float64, _ int64) string {
+			return fmt.Sprintf("%.0f items", f)
+		}))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(5)
+
+	// Output:
+	// -  (5 items, 5 it/s)
+}
+
+func ExampleOptionUseCustomBytesShowWithMax() {
+	bar := NewOptions(100,
+		OptionSetWidth(10),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSetElapsedTime(false), OptionUseCustomBytesShow(func(f float64, i int64) string {
+			return fmt.Sprintf("%.0f of %d items", f, i)
+		}))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(5)
+
+	// Output:
+	// -  (5 of 100 items, 5 it/s)
+}
+
 func TestShowElapsedTimeOnFinish(t *testing.T) {
 	buf := strings.Builder{}
 	bar := NewOptions(10,

@@ -109,6 +109,7 @@ type config struct {
 
 	// showDescriptionAtLineEnd specifies whether description should be written at line end instead of line start
 	showDescriptionAtLineEnd bool
+	customByteShow           func(float64, int64) string
 }
 
 // Theme defines the elements of the bar
@@ -273,6 +274,13 @@ func OptionUseANSICodes(val bool) Option {
 func OptionShowDescriptionAtLineEnd() Option {
 	return func(p *ProgressBar) {
 		p.config.showDescriptionAtLineEnd = true
+	}
+}
+
+// OptionUseCustomBytesShow a transformation function that takes
+func OptionUseCustomBytesShow(option func(float64, int64) string) Option {
+	return func(p *ProgressBar) {
+		p.config.customByteShow = option
 	}
 }
 
@@ -724,6 +732,8 @@ func renderProgressBar(c config, s *state) (int, error) {
 				} else {
 					bytesString += fmt.Sprintf("%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
 				}
+			} else if c.customByteShow != nil {
+				bytesString += c.customByteShow(s.currentBytes, c.max)
 			} else {
 				bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
 			}
@@ -731,6 +741,8 @@ func renderProgressBar(c config, s *state) (int, error) {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
 				bytesString += fmt.Sprintf("%s%s", currentHumanize, currentSuffix)
+			} else if c.customByteShow != nil {
+				bytesString += c.customByteShow(s.currentBytes, c.max)
 			} else {
 				bytesString += fmt.Sprintf("%.0f/%s", s.currentBytes, "-")
 			}
