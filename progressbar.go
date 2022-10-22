@@ -625,7 +625,7 @@ func (p *ProgressBar) render() error {
 	}
 	if p.state.finished {
 		// when using ANSI codes we don't pre-clean the current line
-		if p.config.useANSICodes {
+		if p.config.useANSICodes && p.config.clearOnFinish {
 			err := clearProgressBar(p.config, p.state)
 			if err != nil {
 				return err
