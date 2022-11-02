@@ -51,6 +51,7 @@ type state struct {
 	maxLineWidth int
 	currentBytes float64
 	finished     bool
+	exit         bool // Progress bar exit halfway
 
 	rendered string
 }
@@ -467,6 +468,18 @@ func (p *ProgressBar) Finish() error {
 	return p.Add(0)
 }
 
+// Exit will exit the bar to keep current state
+func (p *ProgressBar) Exit() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	p.state.exit = true
+	if p.config.onCompletion != nil {
+		p.config.onCompletion()
+	}
+	return nil
+}
+
 // Add will add the specified amount to the progressbar
 func (p *ProgressBar) Add(num int) error {
 	return p.Add64(int64(num))
@@ -492,6 +505,10 @@ func (p *ProgressBar) Add64(num int64) error {
 	}
 	p.lock.Lock()
 	defer p.lock.Unlock()
+
+	if p.state.exit {
+		return nil
+	}
 
 	if p.config.max == 0 {
 		return errors.New("max must be greater than 0")
