@@ -826,7 +826,6 @@ func renderProgressBar(c config, s *state) (int, error) {
 			saucerHead = c.theme.SaucerHead
 			s.isAltSaucerHead = true
 		}
-		saucer += saucerHead
 	}
 
 	/*
@@ -874,10 +873,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 			}
 		}
 	} else if rightBrac == "" {
-		str = fmt.Sprintf("%4d%% %s%s%s%s %s",
+		str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
 			s.currentPercent,
 			c.theme.BarStart,
 			saucer,
+			saucerHead,
 			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 			c.theme.BarEnd,
 			sb.String())
@@ -889,10 +889,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 		}
 	} else {
 		if s.currentPercent == 100 {
-			str = fmt.Sprintf("%4d%% %s%s%s%s %s",
+			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
 				s.currentPercent,
 				c.theme.BarStart,
 				saucer,
+				saucerHead,
 				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 				c.theme.BarEnd,
 				sb.String())
@@ -906,10 +907,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 				str = fmt.Sprintf("\r%s%s", c.description, str)
 			}
 		} else {
-			str = fmt.Sprintf("%4d%% %s%s%s%s %s [%s:%s]",
+			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s [%s:%s]",
 				s.currentPercent,
 				c.theme.BarStart,
 				saucer,
+				saucerHead,
 				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 				c.theme.BarEnd,
 				sb.String(),
