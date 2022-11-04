@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"regexp"
@@ -378,7 +377,7 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 	return NewOptions64(
 		maxBytes,
 		OptionSetDescription(desc),
-		OptionSetWriter(ioutil.Discard),
+		OptionSetWriter(io.Discard),
 		OptionShowBytes(true),
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
@@ -424,7 +423,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 	return NewOptions64(
 		max,
 		OptionSetDescription(desc),
-		OptionSetWriter(ioutil.Discard),
+		OptionSetWriter(io.Discard),
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
