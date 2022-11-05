@@ -1,4 +1,5 @@
 name: CI
+
 on:
   push:
     branches: [main]
@@ -6,13 +7,20 @@ on:
     branches: [main]
 
 jobs:
-  unit-tests:
-    name: Go unit tests
+  audit:
+    name: Audit
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - name: Set up Go
+      uses: actions/setup-go@v3
       with:
         go-version: '1.18'
-    - run: go version
-    - run: go test -v -cover .
+
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Run go vet
+      run: go vet .
+
+    - name: Run go test
+      run: go test -v -cover -vet=off .
