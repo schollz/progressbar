@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -122,7 +121,7 @@ func ExampleOptionShowIts() {
 	// 10% |█         | (10 it/s)
 }
 
-func ExampleOptionShowCountBigNumber() {
+func ExampleOptionShowCount_minuscule() {
 	bar := NewOptions(10000, OptionSetWidth(10), OptionShowCount(), OptionSetPredictTime(false))
 	bar.Add(1)
 	// Output:
@@ -143,7 +142,7 @@ func ExampleOptionShowDescriptionAtLineEnd() {
 	// 10% |█         |  [0s:0s] hello
 }
 
-func ExampleOptionShowDescriptionAtLineEnd_WithSpinner() {
+func ExampleOptionShowDescriptionAtLineEnd_spinner() {
 	bar := NewOptions(-1, OptionSetWidth(10), OptionShowDescriptionAtLineEnd(), OptionSetDescription("hello"))
 	_ = bar.Add(1)
 	// Output:
@@ -160,7 +159,7 @@ func ExampleDefault() {
 	//
 }
 
-func ExampleOptionChangeMax() {
+func ExampleProgressBar_ChangeMax() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetPredictTime(false))
 	bar.ChangeMax(50)
 	bar.Add(50)
@@ -168,9 +167,9 @@ func ExampleOptionChangeMax() {
 	// 100% |██████████|
 }
 
-func ExampleIgnoreLength_WithIteration() {
+func ExampleOptionShowIts_spinner() {
 	/*
-		IgnoreLength test with iteration count and iteration rate
+		Spinner test with iteration count and iteration rate
 	*/
 	bar := NewOptions(-1,
 		OptionSetWidth(10),
@@ -230,9 +229,9 @@ func Test_IsFinished(t *testing.T) {
 	}
 }
 
-func ExampleIgnoreLength_WithSpeed() {
+func ExampleOptionShowBytes_spinner() {
 	/*
-		IgnoreLength test with iterations and count
+		Spinner test with iterations and count
 	*/
 	bar := NewOptions(-1,
 		OptionSetWidth(10),
@@ -400,7 +399,7 @@ func TestOptionSetPredictTime(t *testing.T) {
 
 func TestOptionSetElapsedTime(t *testing.T) {
 	/*
-		IgnoreLength test with iteration count and iteration rate
+		Spinner test with iteration count and iteration rate
 	*/
 	bar := NewOptions(-1,
 		OptionSetWidth(10),
@@ -436,7 +435,7 @@ func TestShowElapsedTimeOnFinish(t *testing.T) {
 	}
 }
 
-func TestIgnoreLength(t *testing.T) {
+func TestSpinnerState(t *testing.T) {
 	bar := NewOptions(
 		-1,
 		OptionSetWidth(100),
@@ -639,9 +638,13 @@ func TestProgressBar_Describe(t *testing.T) {
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetWriter(&buf))
 	bar.Describe("performing axial adjustments")
 	bar.Add(10)
-	rawBuf := strconv.QuoteToASCII(buf.String())
-	if rawBuf != `"\rperforming axial adjustments   0% |          |  [0s:0s]\r                                                       \r\rperforming axial adjustments  10% |\u2588         |  [0s:0s]"` {
-		t.Errorf("wrong string: %s", rawBuf)
+	result := buf.String()
+	expect := "" +
+		"\rperforming axial adjustments   0% |          |  [0s:0s]" +
+		"\r                                                       \r" +
+		"\rperforming axial adjustments  10% |█         |  [0s:0s]"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }
 
