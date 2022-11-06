@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"regexp"
@@ -378,7 +377,7 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 	return NewOptions64(
 		maxBytes,
 		OptionSetDescription(desc),
-		OptionSetWriter(ioutil.Discard),
+		OptionSetWriter(io.Discard),
 		OptionShowBytes(true),
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
@@ -424,7 +423,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 	return NewOptions64(
 		max,
 		OptionSetDescription(desc),
-		OptionSetWriter(ioutil.Discard),
+		OptionSetWriter(io.Discard),
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
@@ -708,12 +707,7 @@ func getStringWidth(c config, str string, colorize bool) int {
 }
 
 func renderProgressBar(c config, s *state) (int, error) {
-	leftBrac := ""
-	rightBrac := ""
-	saucer := ""
-	saucerHead := ""
-	bytesString := ""
-	str := ""
+	var sb strings.Builder
 
 	averageRate := average(s.counterLastTenRates)
 	if len(s.counterLastTenRates) == 0 || s.finished {
@@ -728,61 +722,65 @@ func renderProgressBar(c config, s *state) (int, error) {
 
 	// show iteration count in "current/total" iterations format
 	if c.showIterationsCount {
-		if bytesString == "" {
-			bytesString += "("
+		if sb.Len() == 0 {
+			sb.WriteString("(")
 		} else {
-			bytesString += ", "
+			sb.WriteString(", ")
 		}
 		if !c.ignoreLength {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
 				if currentSuffix == c.maxHumanizedSuffix {
-					bytesString += fmt.Sprintf("%s/%s%s", currentHumanize, c.maxHumanized, c.maxHumanizedSuffix)
+					sb.WriteString(fmt.Sprintf("%s/%s%s",
+						currentHumanize, c.maxHumanized, c.maxHumanizedSuffix))
 				} else {
-					bytesString += fmt.Sprintf("%s%s/%s%s", currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix)
+					sb.WriteString(fmt.Sprintf("%s%s/%s%s",
+						currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix))
 				}
 			} else {
-				bytesString += fmt.Sprintf("%.0f/%d", s.currentBytes, c.max)
+				sb.WriteString(fmt.Sprintf("%.0f/%d", s.currentBytes, c.max))
 			}
 		} else {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
-				bytesString += fmt.Sprintf("%s%s", currentHumanize, currentSuffix)
+				sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 			} else {
-				bytesString += fmt.Sprintf("%.0f/%s", s.currentBytes, "-")
+				sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
 			}
 		}
 	}
 
 	// show rolling average rate
 	if c.showBytes && averageRate > 0 && !math.IsInf(averageRate, 1) {
-		if bytesString == "" {
-			bytesString += "("
+		if sb.Len() == 0 {
+			sb.WriteString("(")
 		} else {
-			bytesString += ", "
+			sb.WriteString(", ")
 		}
 		currentHumanize, currentSuffix := humanizeBytes(averageRate)
-		bytesString += fmt.Sprintf("%s%s/s", currentHumanize, currentSuffix)
+		sb.WriteString(fmt.Sprintf("%s%s/s", currentHumanize, currentSuffix))
 	}
 
 	// show iterations rate
 	if c.showIterationsPerSecond {
-		if bytesString == "" {
-			bytesString += "("
+		if sb.Len() == 0 {
+			sb.WriteString("(")
 		} else {
-			bytesString += ", "
+			sb.WriteString(", ")
 		}
 		if averageRate > 1 {
-			bytesString += fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString)
+			sb.WriteString(fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString))
 		} else if averageRate*60 > 1 {
-			bytesString += fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString)
+			sb.WriteString(fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString))
 		} else {
-			bytesString += fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString)
+			sb.WriteString(fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString))
 		}
 	}
-	if bytesString != "" {
-		bytesString += ")"
+	if sb.Len() != 0 {
+		sb.WriteString(")")
 	}
+
+	leftBrac, rightBrac, saucer, saucerHead := "", "", "", ""
 
 	// show time prediction in "current/total" seconds format
 	switch {
@@ -806,7 +804,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			}
 		}
 
-		c.width = width - getStringWidth(c, c.description, true) - 14 - len(bytesString) - len(leftBrac) - len(rightBrac)
+		c.width = width - getStringWidth(c, c.description, true) - 14 - sb.Len() - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if s.currentSaucerSize > 0 {
@@ -828,7 +826,6 @@ func renderProgressBar(c config, s *state) (int, error) {
 			saucerHead = c.theme.SaucerHead
 			s.isAltSaucerHead = true
 		}
-		saucer += saucerHead
 	}
 
 	/*
@@ -838,52 +835,52 @@ func renderProgressBar(c config, s *state) (int, error) {
 		or if showDescriptionAtLineEnd is enabled
 		% |------        |  (kb/s) (iteration count) (iteration rate) (predict time) Description
 	*/
+
 	repeatAmount := c.width - s.currentSaucerSize
 	if repeatAmount < 0 {
 		repeatAmount = 0
 	}
+
+	str := ""
+
 	if c.ignoreLength {
 		spinner := spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))]
 		if c.elapsedTime {
 			if c.showDescriptionAtLineEnd {
 				str = fmt.Sprintf("\r%s %s [%s] %s ",
 					spinner,
-					bytesString,
+					sb.String(),
 					leftBrac,
-					c.description,
-				)
+					c.description)
 			} else {
 				str = fmt.Sprintf("\r%s %s %s [%s] ",
 					spinner,
 					c.description,
-					bytesString,
-					leftBrac,
-				)
+					sb.String(),
+					leftBrac)
 			}
 		} else {
 			if c.showDescriptionAtLineEnd {
 				str = fmt.Sprintf("\r%s %s %s ",
 					spinner,
-					bytesString,
-					c.description,
-				)
+					sb.String(),
+					c.description)
 			} else {
 				str = fmt.Sprintf("\r%s %s %s ",
 					spinner,
 					c.description,
-					bytesString,
-				)
+					sb.String())
 			}
 		}
 	} else if rightBrac == "" {
-		str = fmt.Sprintf("%4d%% %s%s%s%s %s",
+		str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
 			s.currentPercent,
 			c.theme.BarStart,
 			saucer,
+			saucerHead,
 			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 			c.theme.BarEnd,
-			bytesString,
-		)
+			sb.String())
 
 		if c.showDescriptionAtLineEnd {
 			str = fmt.Sprintf("\r%s %s ", str, c.description)
@@ -892,14 +889,14 @@ func renderProgressBar(c config, s *state) (int, error) {
 		}
 	} else {
 		if s.currentPercent == 100 {
-			str = fmt.Sprintf("%4d%% %s%s%s%s %s",
+			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
 				s.currentPercent,
 				c.theme.BarStart,
 				saucer,
+				saucerHead,
 				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 				c.theme.BarEnd,
-				bytesString,
-			)
+				sb.String())
 			if c.showElapsedTimeOnFinish {
 				str = fmt.Sprintf("%s [%s]", str, leftBrac)
 			}
@@ -910,16 +907,16 @@ func renderProgressBar(c config, s *state) (int, error) {
 				str = fmt.Sprintf("\r%s%s", c.description, str)
 			}
 		} else {
-			str = fmt.Sprintf("%4d%% %s%s%s%s %s [%s:%s]",
+			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s [%s:%s]",
 				s.currentPercent,
 				c.theme.BarStart,
 				saucer,
+				saucerHead,
 				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 				c.theme.BarEnd,
-				bytesString,
+				sb.String(),
 				leftBrac,
-				rightBrac,
-			)
+				rightBrac)
 
 			if c.showDescriptionAtLineEnd {
 				str = fmt.Sprintf("\r%s %s", str, c.description)

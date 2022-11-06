@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -331,7 +330,7 @@ func TestBasicSets(t *testing.T) {
 		OptionSetWidth(888),
 		OptionSetRenderBlankState(true),
 
-		OptionSetWriter(ioutil.Discard), // suppressing output for this test
+		OptionSetWriter(io.Discard), // suppressing output for this test
 	)
 
 	tc := b.config
@@ -494,7 +493,7 @@ func TestReaderToFile(t *testing.T) {
 	assert.Nil(t, err)
 	defer resp.Body.Close()
 
-	f, err := ioutil.TempFile("", "progressbar_testfile")
+	f, err := os.CreateTemp("", "progressbar_testfile")
 	if err != nil {
 		t.Fatal()
 	}
@@ -520,7 +519,7 @@ func TestReaderToFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -548,7 +547,7 @@ func TestReaderToFileUnknownLength(t *testing.T) {
 	assert.Nil(t, err)
 	defer resp.Body.Close()
 
-	f, err := ioutil.TempFile("", "progressbar_testfile")
+	f, err := os.CreateTemp("", "progressbar_testfile")
 	if err != nil {
 		t.Fatal()
 	}
@@ -574,7 +573,7 @@ func TestReaderToFileUnknownLength(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	if err != nil {
 		t.Fatal(err)
 	}
