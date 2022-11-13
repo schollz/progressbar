@@ -328,7 +328,6 @@ func TestBasicSets(t *testing.T) {
 		999,
 		OptionSetWidth(888),
 		OptionSetRenderBlankState(true),
-
 		OptionSetWriter(io.Discard), // suppressing output for this test
 	)
 
@@ -654,5 +653,125 @@ func TestRenderBlankStateWithThrottle(t *testing.T) {
 	expect := "0% |          |  [0s:0s]"
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
+func TestOptionFullWidth(t *testing.T) {
+	var tests = []struct {
+		opts     []Option
+		expected string
+	}{
+		{ // 1
+			[]Option{},
+			"" +
+				"\r  10% |██████                                                        |  [1s:9s]" +
+				"\r                                                                               \r" +
+				"\r 100% |██████████████████████████████████████████████████████████████| ",
+		},
+		{ // 2
+			[]Option{OptionSetDescription("Progress:")},
+			"" +
+				"\rProgress:  10% |█████                                                |  [1s:9s]" +
+				"\r                                                                               \r" +
+				"\rProgress: 100% |█████████████████████████████████████████████████████| ",
+		},
+		{ // 3
+			[]Option{OptionSetDescription("<1/5>"), OptionShowDescriptionAtLineEnd()},
+			"" +
+				"\r  10% |█████                                                   |  [1s:9s] <1/5>" +
+				"\r                                                                               \r" +
+				"\r 100% |████████████████████████████████████████████████████████|  <1/5>",
+		},
+		{ // 4
+			[]Option{OptionSetPredictTime(false)},
+			"" +
+				"\r  10% |██████                                                          |  " +
+				"\r                                                                          \r" +
+				"\r 100% |████████████████████████████████████████████████████████████████|  ",
+		},
+		{ // 5
+			[]Option{OptionSetPredictTime(false), OptionShowElapsedTimeOnFinish()},
+			"" +
+				"\r  10% |██████                                                          |  " +
+				"\r                                                                          \r" +
+				"\r 100% |████████████████████████████████████████████████████████████████|  [2s] ",
+		},
+		{ // 6
+			[]Option{OptionSetPredictTime(false), OptionSetElapsedTime(false)},
+			"" +
+				"\r  10% |██████                                                               |  " +
+				"\r                                                                               \r" +
+				"\r 100% |█████████████████████████████████████████████████████████████████████|  ",
+		},
+		{ // 7
+			[]Option{OptionShowIts()},
+			"" +
+				"\r  10% |█████                                                | (10 it/s) [1s:9s]" +
+				"\r                                                                               \r" +
+				"\r 100% |█████████████████████████████████████████████████████| (50 it/s)",
+		},
+		{ // 8
+			[]Option{OptionShowCount()},
+			"" +
+				"\r  10% |█████                                                 | (10/100) [1s:9s]" +
+				"\r                                                                               \r" +
+				"\r 100% |█████████████████████████████████████████████████████| (100/100)",
+		},
+		{ // 9
+			[]Option{OptionShowIts(), OptionShowCount(), OptionShowElapsedTimeOnFinish()},
+			"" +
+				"\r  10% |████                                         | (10/100, 10 it/s) [1s:9s]" +
+				"\r                                                                               \r" +
+				"\r 100% |████████████████████████████████████████████| (100/100, 50 it/s) [2s]",
+		},
+		{ // 10
+			[]Option{OptionSetDescription("Progress:"), OptionShowIts(), OptionShowCount()},
+			"" +
+				"\rProgress:  10% |███                                 | (10/100, 10 it/s) [1s:9s]" +
+				"\r                                                                               \r" +
+				"\rProgress: 100% |███████████████████████████████████| (100/100, 50 it/s)",
+		},
+		{ // 11
+			[]Option{OptionSetDescription("<3/5>"), OptionShowIts(), OptionShowCount(), OptionShowElapsedTimeOnFinish(), OptionShowDescriptionAtLineEnd()},
+			"" +
+				"\r  10% |███                                    | (10/100, 10 it/s) [1s:9s] <3/5>" +
+				"\r                                                                               \r" +
+				"\r 100% |██████████████████████████████████████| (100/100, 50 it/s) [2s] <3/5>",
+		},
+		{ // 12
+			[]Option{OptionShowIts(), OptionShowCount(), OptionSetPredictTime(false)},
+			"" +
+				"\r  10% |████                                           | (10/100, 10 it/s) " +
+				"\r                                                                          \r" +
+				"\r 100% |██████████████████████████████████████████████| (100/100, 50 it/s) ",
+		},
+		{ // 13
+			[]Option{OptionShowIts(), OptionShowCount(), OptionSetPredictTime(false), OptionShowElapsedTimeOnFinish()},
+			"" +
+				"\r  10% |████                                           | (10/100, 10 it/s) " +
+				"\r                                                                          \r" +
+				"\r 100% |██████████████████████████████████████████████| (100/100, 50 it/s) [2s] ",
+		},
+		{ // 14
+			[]Option{OptionShowIts(), OptionShowCount(), OptionSetPredictTime(false), OptionSetElapsedTime(false)},
+			"" +
+				"\r  10% |█████                                               | (10/100, 10 it/s) " +
+				"\r                                                                               \r" +
+				"\r 100% |███████████████████████████████████████████████████| (100/100, 50 it/s) ",
+		},
+	}
+
+	for i, test := range tests {
+		test := test
+		t.Run(fmt.Sprintf("%d", i+1), func(t *testing.T) {
+			t.Parallel()
+			buf := strings.Builder{}
+			bar := NewOptions(100, append(test.opts, []Option{OptionFullWidth(), OptionSetWriter(&buf)}...)...)
+			time.Sleep(1 * time.Second)
+			bar.Add(10)
+			time.Sleep(1 * time.Second)
+			bar.Add(90)
+			assert.Equal(t, test.expected, buf.String())
+		})
 	}
 }
