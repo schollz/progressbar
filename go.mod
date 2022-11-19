@@ -6,10 +6,9 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.14
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
-	github.com/rivo/uniseg v0.4.2 // indirect
+	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0
+	golang.org/x/term v0.2.0
 )
 
 go 1.13
