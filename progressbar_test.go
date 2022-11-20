@@ -16,6 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	termWidth = func() (int, error) {
+		return 0, os.ErrPermission
+	}
+	os.Exit(m.Run())
+}
+
 func BenchmarkRender(b *testing.B) {
 	bar := NewOptions64(100000000,
 		OptionSetWriter(os.Stderr),

@@ -188,7 +188,7 @@ func OptionEnableColorCodes(colorCodes bool) Option {
 	}
 }
 
-// OptionSetElapsedTime will enable elapsed time. always enabled if OptionSetPredictTime is true.
+// OptionSetElapsedTime will enable elapsed time. Always enabled if OptionSetPredictTime is true.
 func OptionSetElapsedTime(elapsedTime bool) Option {
 	return func(p *ProgressBar) {
 		p.config.elapsedTime = elapsedTime
@@ -484,12 +484,12 @@ func (p *ProgressBar) Add(num int) error {
 	return p.Add64(int64(num))
 }
 
-// Set wil set the bar to a current number
+// Set will set the bar to a current number
 func (p *ProgressBar) Set(num int) error {
 	return p.Set64(int64(num))
 }
 
-// Set64 wil set the bar to a current number
+// Set64 will set the bar to a current number
 func (p *ProgressBar) Set64(num int64) error {
 	p.lock.Lock()
 	toAdd := num - int64(p.state.currentBytes)
@@ -795,12 +795,9 @@ func renderProgressBar(c config, s *state) (int, error) {
 	}
 
 	if c.fullWidth && !c.ignoreLength {
-		width, _, err := term.GetSize(int(os.Stdout.Fd()))
+		width, err := termWidth()
 		if err != nil {
-			width, _, err = term.GetSize(int(os.Stderr.Fd()))
-			if err != nil {
-				width = 80
-			}
+			width = 80
 		}
 
 		amend := 1 // an extra space at eol
@@ -1061,4 +1058,18 @@ func humanizeBytes(s float64) (string, string) {
 
 func logn(n, b float64) float64 {
 	return math.Log(n) / math.Log(b)
+}
+
+// termWidth function returns the visible width of the current terminal
+// and can be redefined for testing
+var termWidth = func() (width int, err error) {
+	width, _, err = term.GetSize(int(os.Stdout.Fd()))
+	if err == nil {
+		return width, nil
+	}
+	width, _, err = term.GetSize(int(os.Stderr.Fd()))
+	if err == nil {
+		return width, nil
+	}
+	return 0, err
 }
