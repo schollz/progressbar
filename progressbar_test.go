@@ -16,6 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMain(m *testing.M) {
+	termWidth = func() (int, error) {
+		return 0, os.ErrPermission
+	}
+	os.Exit(m.Run())
+}
+
 func BenchmarkRender(b *testing.B) {
 	bar := NewOptions64(100000000,
 		OptionSetWriter(os.Stderr),
@@ -395,12 +402,11 @@ func TestOptionSetPredictTime(t *testing.T) {
 	}
 }
 
-func TestOptionSetElapsedTime(t *testing.T) {
-	/*
-		Spinner test with iteration count and iteration rate
-	*/
+func TestOptionSetElapsedTime_spinner(t *testing.T) {
+	buf := strings.Builder{}
 	bar := NewOptions(-1,
 		OptionSetWidth(10),
+		OptionSetWriter(&buf),
 		OptionShowIts(),
 		OptionShowCount(),
 		OptionSetElapsedTime(false),
@@ -408,9 +414,11 @@ func TestOptionSetElapsedTime(t *testing.T) {
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(5)
-
-	// Output:
-	// -  (5/-, 5 it/s)
+	result := strings.TrimSpace(buf.String())
+	expect := "-  (5/-, 5 it/s)"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
 }
 
 func TestShowElapsedTimeOnFinish(t *testing.T) {
@@ -420,14 +428,11 @@ func TestShowElapsedTimeOnFinish(t *testing.T) {
 		OptionSetWidth(10),
 		OptionSetWriter(&buf),
 	)
-
 	bar.Reset()
 	time.Sleep(3 * time.Second)
 	bar.Add(10)
-
 	result := strings.TrimSpace(buf.String())
 	expect := "100% |██████████|  [3s]"
-
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
