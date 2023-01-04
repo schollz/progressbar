@@ -878,9 +878,6 @@ func renderProgressBar(c config, s *state) (int, error) {
 			selectedSpinner = c.spinner
 		}
 		spinner := selectedSpinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(selectedSpinner)))))]
-		if len(c.spinner) > 0 {
-			spinner = c.spinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(c.spinner)))))]
-		}
 		if c.elapsedTime {
 			if c.showDescriptionAtLineEnd {
 				str = fmt.Sprintf("\r%s %s [%s] %s ",
