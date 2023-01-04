@@ -873,8 +873,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 	str := ""
 
 	if c.ignoreLength {
-		index := int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))
-		spinner := spinners[c.spinnerType][index]
+		selectedSpinner := spinners[c.spinnerType]
+		if len(c.spinner) > 0 {
+			selectedSpinner = c.spinner
+		}
+		spinner := selectedSpinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(selectedSpinner)))))]
 		if len(c.spinner) > 0 {
 			spinner = c.spinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(c.spinner)))))]
 		}
