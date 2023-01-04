@@ -93,8 +93,8 @@ type config struct {
 	// clear bar once finished
 	clearOnFinish bool
 
-	// spinner is a slice of string to represent the animation
-	spinner []string
+	// spinnerType should be a number between 0-75
+	spinnerType int
 
 	// fullWidth specifies whether to measure and set the bar to a specific width
 	fullWidth bool
@@ -132,9 +132,9 @@ func OptionSetWidth(s int) Option {
 }
 
 // OptionSpinnerType sets the type of spinner used for indeterminate bars
-func OptionSpinnerType(spinner []string) Option {
+func OptionSpinnerType(spinnerType int) Option {
 	return func(p *ProgressBar) {
-		p.config.spinner = spinner
+		p.config.spinnerType = spinnerType
 	}
 }
 
@@ -296,13 +296,17 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			throttleDuration: 0 * time.Nanosecond,
 			elapsedTime:      true,
 			predictTime:      true,
-			spinner:          GetPresetSpinner(9),
+			spinnerType:      9,
 			invisible:        false,
 		},
 	}
 
 	for _, o := range options {
 		o(&b)
+	}
+
+	if b.config.spinnerType < 0 || b.config.spinnerType > 75 {
+		panic("invalid spinner type, must be between 0 and 75")
 	}
 
 	// ignoreLength if max bytes not known
@@ -355,7 +359,7 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 		OptionOnCompletion(func() {
 			fmt.Fprint(os.Stderr, "\n")
 		}),
-		OptionSpinnerType(GetPresetSpinner(14)),
+		OptionSpinnerType(14),
 		OptionFullWidth(),
 		OptionSetRenderBlankState(true),
 	)
@@ -378,7 +382,7 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
-		OptionSpinnerType(GetPresetSpinner(14)),
+		OptionSpinnerType(14),
 		OptionFullWidth(),
 	)
 }
@@ -401,7 +405,7 @@ func Default(max int64, description ...string) *ProgressBar {
 		OptionOnCompletion(func() {
 			fmt.Fprint(os.Stderr, "\n")
 		}),
-		OptionSpinnerType(GetPresetSpinner(14)),
+		OptionSpinnerType(14),
 		OptionFullWidth(),
 		OptionSetRenderBlankState(true),
 	)
@@ -424,7 +428,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
 		OptionShowIts(),
-		OptionSpinnerType(GetPresetSpinner(14)),
+		OptionSpinnerType(14),
 		OptionFullWidth(),
 	)
 }
@@ -849,7 +853,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 	str := ""
 
 	if c.ignoreLength {
-		spinner := c.spinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(c.spinner)))))]
+		spinner := spinners[c.spinnerType][int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(spinners[c.spinnerType])))))]
 		if c.elapsedTime {
 			if c.showDescriptionAtLineEnd {
 				str = fmt.Sprintf("\r%s %s [%s] %s ",
@@ -1068,13 +1072,4 @@ var termWidth = func() (width int, err error) {
 		return width, nil
 	}
 	return 0, err
-}
-
-// GetPresetSpinner returns an preset spinner. The spinnerType is an integer
-// between 0 and 75.
-func GetPresetSpinner(spinnerType int) []string {
-	if spinnerType < 0 || spinnerType > 75 {
-		panic("invalid spinner type, must be between 0 and 75")
-	}
-	return spinners[spinnerType]
 }

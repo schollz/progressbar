@@ -196,7 +196,7 @@ func TestSpinnerType(t *testing.T) {
 		OptionSetDescription("indeterminate spinner"),
 		OptionShowIts(),
 		OptionShowCount(),
-		OptionSpinnerType(GetPresetSpinner(9)),
+		OptionSpinnerType(9),
 	)
 	bar.Reset()
 	for i := 0; i < 10; i++ {
