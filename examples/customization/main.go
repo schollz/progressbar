@@ -38,5 +38,5 @@ func main() {
 
 	// got notified that progress bar is complete.
 	<-doneCh
-	fmt.Println("\n ======= progress bar completed ==========\n")
+	fmt.Println("\n ======= progress bar completed ==========")
 }
