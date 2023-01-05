@@ -201,10 +201,53 @@ func TestSpinnerType(t *testing.T) {
 	bar.Reset()
 	for i := 0; i < 10; i++ {
 		time.Sleep(120 * time.Millisecond)
-		bar.Add(1)
+		err := bar.Add(1)
+		if err != nil {
+			t.Errorf("Successfully tested one spinner option can be used.")
+		}
 	}
 	if false {
 		t.Errorf("error")
+	}
+}
+
+func TestSpinnerCustom(t *testing.T) {
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetDescription("indeterminate spinner"),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSpinnerCustom([]string{"🐰", "🐰", "🥕", "🥕"}),
+	)
+	bar.Reset()
+	for i := 0; i < 10; i++ {
+		time.Sleep(120 * time.Millisecond)
+		err := bar.Add(1)
+		if err != nil {
+			t.Errorf("Successfully tested one spinner option can be used.")
+		}
+	}
+	if false {
+		t.Errorf("error")
+	}
+}
+
+func TestSpinnerTypeAndCustom(t *testing.T) {
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetDescription("indeterminate spinner"),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSpinnerCustom([]string{"🐰", "🐰", "🥕", "🥕"}),
+		OptionSpinnerType(9),
+	)
+	bar.Reset()
+	for i := 0; i < 10; i++ {
+		time.Sleep(120 * time.Millisecond)
+		err := bar.Add(1)
+		if err == nil {
+			t.Errorf("Successfully tested both spinner options cannot be used together.")
+		}
 	}
 }
 
