@@ -1091,9 +1091,6 @@ var termWidth = func() (width int, err error) {
 	if err == nil {
 		return width, nil
 	}
-	width, _, err = term.GetSize(int(os.Stderr.Fd()))
-	if err == nil {
-		return width, nil
-	}
+
 	return 0, err
 }
