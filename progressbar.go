@@ -1079,12 +1079,12 @@ func average(xs []float64) float64 {
 }
 
 func humanizeBytes(s float64, iec bool) (string, string) {
-	base := 1000.0
 	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
+	base := 1000.0
 
 	if iec {
-		base = 1024.0
 		sizes = []string{" B", " KiB", " MiB", " GiB", " TiB", " PiB", " EiB"}
+		base = 1024.0
 	}
 
 	if s < 10 {
