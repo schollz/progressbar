@@ -823,3 +823,19 @@ func TestOptionFullWidth(t *testing.T) {
 		})
 	}
 }
+
+func TestHumanizeBytesSI(t *testing.T) {
+	amount, suffix := humanizeBytes(float64(12.34)*1000*1000, false)
+	assert.Equal(t, "12 MB", fmt.Sprintf("%s%s", amount, suffix))
+
+	amount, suffix = humanizeBytes(float64(56.78)*1000*1000*1000, false)
+	assert.Equal(t, "57 GB", fmt.Sprintf("%s%s", amount, suffix))
+}
+
+func TestHumanizeBytesIEC(t *testing.T) {
+	amount, suffix := humanizeBytes(float64(12.34)*1024*1024, true)
+	assert.Equal(t, "12 MiB", fmt.Sprintf("%s%s", amount, suffix))
+
+	amount, suffix = humanizeBytes(float64(56.78)*1024*1024*1024, true)
+	assert.Equal(t, "57 GiB", fmt.Sprintf("%s%s", amount, suffix))
+}

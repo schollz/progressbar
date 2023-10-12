@@ -113,6 +113,9 @@ type config struct {
 	// whether the render function should make use of ANSI codes to reduce console I/O
 	useANSICodes bool
 
+	// whether to use the IEC units (e.g. MiB) instead of the default SI units (e.g. MB)
+	useIECUnits bool
+
 	// showDescriptionAtLineEnd specifies whether description should be written at line end instead of line start
 	showDescriptionAtLineEnd bool
 }
@@ -284,6 +287,14 @@ func OptionUseANSICodes(val bool) Option {
 	}
 }
 
+// OptionUseIECUnits will enable IEC units (e.g. MiB) instead of the default
+// SI units (e.g. MB).
+func OptionUseIECUnits(val bool) Option {
+	return func(p *ProgressBar) {
+		p.config.useIECUnits = val
+	}
+}
+
 // OptionShowDescriptionAtLineEnd defines whether description should be written at line end instead of line start
 func OptionShowDescriptionAtLineEnd() Option {
 	return func(p *ProgressBar) {
@@ -331,7 +342,8 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		b.config.predictTime = false
 	}
 
-	b.config.maxHumanized, b.config.maxHumanizedSuffix = humanizeBytes(float64(b.config.max))
+	b.config.maxHumanized, b.config.maxHumanizedSuffix = humanizeBytes(float64(b.config.max),
+		b.config.useIECUnits)
 
 	if b.config.renderWithBlankState {
 		b.RenderBlank()
@@ -620,7 +632,8 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 	p.config.max = newMax
 
 	if p.config.showBytes {
-		p.config.maxHumanized, p.config.maxHumanizedSuffix = humanizeBytes(float64(p.config.max))
+		p.config.maxHumanized, p.config.maxHumanizedSuffix = humanizeBytes(float64(p.config.max),
+			p.config.useIECUnits)
 	}
 
 	p.Add(0) // re-render
@@ -750,7 +763,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 		}
 		if !c.ignoreLength {
 			if c.showBytes {
-				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
+				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				if currentSuffix == c.maxHumanizedSuffix {
 					sb.WriteString(fmt.Sprintf("%s/%s%s",
 						currentHumanize, c.maxHumanized, c.maxHumanizedSuffix))
@@ -763,7 +776,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			}
 		} else {
 			if c.showBytes {
-				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes)
+				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 			} else {
 				sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
@@ -778,7 +791,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 		} else {
 			sb.WriteString(", ")
 		}
-		currentHumanize, currentSuffix := humanizeBytes(averageRate)
+		currentHumanize, currentSuffix := humanizeBytes(averageRate, c.useIECUnits)
 		sb.WriteString(fmt.Sprintf("%s%s/s", currentHumanize, currentSuffix))
 	}
 
@@ -1065,9 +1078,15 @@ func average(xs []float64) float64 {
 	return total / float64(len(xs))
 }
 
-func humanizeBytes(s float64) (string, string) {
+func humanizeBytes(s float64, iec bool) (string, string) {
+	base := 1000.0
 	sizes := []string{" B", " kB", " MB", " GB", " TB", " PB", " EB"}
-	base := 1024.0
+
+	if iec {
+		base = 1024.0
+		sizes = []string{" B", " KiB", " MiB", " GiB", " TiB", " PiB", " EiB"}
+	}
+
 	if s < 10 {
 		return fmt.Sprintf("%2.0f", s), sizes[0]
 	}
