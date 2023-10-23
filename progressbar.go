@@ -66,6 +66,7 @@ type config struct {
 	description          string
 	iterationString      string
 	ignoreLength         bool // ignoreLength if max bytes not known
+	termWidth            int
 
 	// whether the output is expected to contain color codes
 	colorCodes bool
@@ -300,6 +301,11 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 
 // NewOptions64 constructs a new instance of ProgressBar, with any options you specify
 func NewOptions64(max int64, options ...Option) *ProgressBar {
+	termWidth, err := termWidth()
+	if err != nil {
+		termWidth = 80
+	}
+
 	b := ProgressBar{
 		state: getBasicState(),
 		config: config{
@@ -313,6 +319,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			predictTime:      true,
 			spinnerType:      9,
 			invisible:        false,
+			termWidth:        termWidth,
 		},
 	}
 
@@ -817,11 +824,6 @@ func renderProgressBar(c config, s *state) (int, error) {
 	}
 
 	if c.fullWidth && !c.ignoreLength {
-		width, err := termWidth()
-		if err != nil {
-			width = 80
-		}
-
 		amend := 1 // an extra space at eol
 		switch {
 		case leftBrac != "" && rightBrac != "":
@@ -835,7 +837,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			amend += 1 // another space
 		}
 
-		c.width = width - getStringWidth(c, c.description, true) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
+		c.width = c.termWidth - getStringWidth(c, c.description, true) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if s.currentSaucerSize > 0 {
@@ -987,10 +989,8 @@ func clearProgressBar(c config, s state) error {
 	// fill the empty content
 	// to overwrite the progress bar and jump
 	// back to the beginning of the line
-	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", s.maxLineWidth))
+	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", c.termWidth))
 	return writeString(c, str)
-	// the following does not show correctly if the previous line is longer than subsequent line
-	// return writeString(c, "\r")
 }
 
 func writeString(c config, str string) error {
