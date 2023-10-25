@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/colorstring"
+	"github.com/rivo/uniseg"
 	"golang.org/x/term"
 )
 
@@ -723,7 +723,7 @@ func getStringWidth(c config, str string, colorize bool) int {
 	// get the amount of runes in the string instead of the
 	// character count of the string, as some runes span multiple characters.
 	// see https://stackoverflow.com/a/12668840/2733724
-	stringWidth := runewidth.StringWidth(cleanString)
+	stringWidth := uniseg.StringWidth(cleanString)
 	return stringWidth
 }
 
