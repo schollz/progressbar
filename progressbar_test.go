@@ -323,14 +323,14 @@ func TestBarSmallBytes(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 		bar.Add(1000)
 	}
-	if !strings.Contains(buf.String(), "8.8 kB/95 MB") {
+	if !strings.Contains(buf.String(), "9.0 kB/100 MB") {
 		t.Errorf("wrong string: %s", buf.String())
 	}
 	for i := 1; i < 10; i++ {
 		time.Sleep(10 * time.Millisecond)
 		bar.Add(1000000)
 	}
-	if !strings.Contains(buf.String(), "8.6/95 MB") {
+	if !strings.Contains(buf.String(), "9.0/100 MB") {
 		t.Errorf("wrong string: %s", buf.String())
 	}
 }
