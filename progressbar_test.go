@@ -491,6 +491,12 @@ func TestSpinnerState(t *testing.T) {
 	bar.Add(10)
 
 	state := bar.State()
+	if state.Max != -1 {
+		t.Errorf("Max mismatched gotMax %d wantMax %d", state.Max, -1)
+	}
+	if state.CurrentNum != 10 {
+		t.Errorf("Number mismatched gotNum %d wantNum %d", state.CurrentNum, 10)
+	}
 	if state.CurrentBytes != 10.0 {
 		t.Errorf("Number of bytes mismatched gotBytes %f wantBytes %f", state.CurrentBytes, 10.0)
 	}
