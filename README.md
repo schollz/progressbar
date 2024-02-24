@@ -70,7 +70,7 @@ There is a lot of customization that you can do - change the writer, the color, 
 
 ```golang
 bar := progressbar.NewOptions(1000,
-    progressbar.OptionSetWriter(ansi.NewAnsiStdout()),
+    progressbar.OptionSetWriter(ansi.NewAnsiStdout()), //you should install "github.com/k0kubun/go-ansi"
     progressbar.OptionEnableColorCodes(true),
     progressbar.OptionShowBytes(true),
     progressbar.OptionSetWidth(15),
