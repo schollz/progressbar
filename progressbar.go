@@ -471,6 +471,9 @@ func (p *ProgressBar) String() string {
 
 // RenderBlank renders the current bar state, you can use this to render a 0% state
 func (p *ProgressBar) RenderBlank() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	if p.config.invisible {
 		return nil
 	}
@@ -644,6 +647,9 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 
 // IsFinished returns true if progress bar is completed
 func (p *ProgressBar) IsFinished() bool {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	return p.state.finished
 }
 
