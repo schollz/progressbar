@@ -1069,19 +1069,19 @@ func (r *Reader) Close() (err error) {
 // Write implement io.Writer
 func (p *ProgressBar) Write(b []byte) (n int, err error) {
 	n = len(b)
-	p.Add(n)
+	err = p.Add(n)
 	return
 }
 
 // Read implement io.Reader
 func (p *ProgressBar) Read(b []byte) (n int, err error) {
 	n = len(b)
-	p.Add(n)
+	err = p.Add(n)
 	return
 }
 
 func (p *ProgressBar) Close() (err error) {
-	p.Finish()
+	err = p.Finish()
 	return
 }
 
