@@ -94,10 +94,12 @@ func ExampleOptionClearOnFinish() {
 }
 
 func ExampleProgressBar_Finish() {
-	bar := NewOptions(100, OptionSetWidth(10))
+	bar := NewOptions(100, OptionSetWidth(10), OptionShowCount(), OptionShowBytes(true), OptionShowIts())
+	bar.Reset()
+	time.Sleep(1 * time.Second)
 	bar.Finish()
 	// Output:
-	// 100% |██████████|
+	// 100% |██████████| (100/100 B, 100 B/s, 100 it/s)
 }
 
 func Example_xOutOfY() {
