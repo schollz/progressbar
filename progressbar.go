@@ -323,7 +323,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			width:            40,
 			max:              max,
 			throttleDuration: 0 * time.Nanosecond,
-			elapsedTime:      true,
+			elapsedTime:      max == -1,
 			predictTime:      true,
 			spinnerType:      9,
 			invisible:        false,
@@ -847,7 +847,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 		}
 		rightBrac = rightBracNum.String()
 		fallthrough
-	case c.elapsedTime:
+	case c.elapsedTime || c.showElapsedTimeOnFinish:
 		leftBrac = (time.Duration(time.Since(s.startTime).Seconds()) * time.Second).String()
 	}
 
@@ -951,8 +951,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
 			c.theme.BarEnd,
 			sb.String())
-
-		if s.currentPercent == 100 && c.showElapsedTimeOnFinish {
+		if (s.currentPercent == 100 && c.showElapsedTimeOnFinish) || c.elapsedTime {
 			str = fmt.Sprintf("%s [%s]", str, leftBrac)
 		}
 
