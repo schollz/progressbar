@@ -612,11 +612,17 @@ func New64(max int64) *ProgressBar {
 
 // GetMax returns the max of a bar
 func (p *ProgressBar) GetMax() int {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	return int(p.config.max)
 }
 
 // GetMax64 returns the current max
 func (p *ProgressBar) GetMax64() int64 {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	return p.config.max
 }
 
@@ -632,12 +638,16 @@ func (p *ProgressBar) ChangeMax(newMax int) {
 // but takes in a int64
 // to avoid casting
 func (p *ProgressBar) ChangeMax64(newMax int64) {
+	p.lock.Lock()
+
 	p.config.max = newMax
 
 	if p.config.showBytes {
 		p.config.maxHumanized, p.config.maxHumanizedSuffix = humanizeBytes(float64(p.config.max),
 			p.config.useIECUnits)
 	}
+
+	p.lock.Unlock() // so p.Add can lock
 
 	p.Add(0) // re-render
 }
