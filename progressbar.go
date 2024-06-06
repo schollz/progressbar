@@ -494,7 +494,13 @@ func (p *ProgressBar) Reset() {
 
 // Finish will fill the bar to full
 func (p *ProgressBar) Finish() error {
-	return p.Set64(p.config.max)
+	p.lock.Lock()
+	p.state.currentNum = p.config.max
+	if !p.config.ignoreLength {
+		p.state.currentBytes = float64(p.config.max)
+	}
+	p.lock.Unlock()
+	return p.Add(0)
 }
 
 // Exit will exit the bar to keep current state

@@ -93,6 +93,23 @@ func ExampleOptionClearOnFinish() {
 	// Finished
 }
 
+func TestSpinnerClearOnFinish(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	time.Sleep(1 * time.Second)
+	bar.Finish()
+	result := buf.String()
+	expect := "" +
+		"\r-  (10 B, 10 B/s, 10 it/s) [1s] " +
+		"\r                                \r"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
 func ExampleProgressBar_Finish() {
 	bar := NewOptions(100, OptionSetWidth(10), OptionShowCount(), OptionShowBytes(true), OptionShowIts())
 	bar.Reset()
@@ -100,6 +117,24 @@ func ExampleProgressBar_Finish() {
 	bar.Finish()
 	// Output:
 	// 100% |██████████| (100/100 B, 100 B/s, 100 it/s)
+}
+
+func TestSpinnerFinish(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionSetWriter(&buf))
+	bar.Reset()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	time.Sleep(1 * time.Second)
+	bar.Finish()
+	result := buf.String()
+	expect := "" +
+		"\r-  (10 B, 10 B/s, 10 it/s) [1s] " +
+		"\r                                \r" +
+		"\r|  (10 B,  5 B/s, 5 it/s) [2s] "
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
 }
 
 func Example_xOutOfY() {
