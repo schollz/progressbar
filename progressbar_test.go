@@ -95,7 +95,7 @@ func ExampleOptionClearOnFinish() {
 
 func TestSpinnerClearOnFinish(t *testing.T) {
 	buf := strings.Builder{}
-	bar := NewOptions(-1, OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf))
+	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
@@ -121,7 +121,7 @@ func ExampleProgressBar_Finish() {
 
 func TestSpinnerFinish(t *testing.T) {
 	buf := strings.Builder{}
-	bar := NewOptions(-1, OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionSetWriter(&buf))
+	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionSetWriter(&buf))
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(10)
