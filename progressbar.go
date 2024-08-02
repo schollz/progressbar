@@ -1,6 +1,7 @@
 package progressbar
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -121,6 +122,8 @@ type config struct {
 
 	// showDescriptionAtLineEnd specifies whether description should be written at line end instead of line start
 	showDescriptionAtLineEnd bool
+
+	stdBuffer bytes.Buffer
 }
 
 // Theme defines the elements of the bar
@@ -689,6 +692,7 @@ func (p *ProgressBar) render() error {
 	if !p.state.finished && p.state.currentNum >= p.config.max {
 		p.state.finished = true
 		if !p.config.clearOnFinish {
+			io.Copy(p.config.writer, &p.config.stdBuffer)
 			renderProgressBar(p.config, &p.state)
 		}
 		if p.config.onCompletion != nil {
@@ -707,6 +711,7 @@ func (p *ProgressBar) render() error {
 	}
 
 	// then, re-render the current progress bar
+	io.Copy(p.config.writer, &p.config.stdBuffer)
 	w, err := renderProgressBar(p.config, &p.state)
 	if err != nil {
 		return err
@@ -1141,4 +1146,24 @@ var termWidth = func() (width int, err error) {
 	}
 
 	return 0, err
+}
+
+func shouldCacheOutput(pb *ProgressBar) bool {
+	return !pb.state.finished && !pb.state.exit && !pb.config.invisible
+}
+
+func Bprintln(pb *ProgressBar, a ...interface{}) (int, error) {
+	if !shouldCacheOutput(pb) {
+		return fmt.Fprintln(pb.config.writer, a...)
+	} else {
+		return fmt.Fprintln(&pb.config.stdBuffer, a...)
+	}
+}
+
+func Bprintf(pb *ProgressBar, format string, a ...interface{}) (int, error) {
+	if !shouldCacheOutput(pb) {
+		return fmt.Fprintf(pb.config.writer, format, a...)
+	} else {
+		return fmt.Fprintf(&pb.config.stdBuffer, format, a...)
+	}
 }
