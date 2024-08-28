@@ -609,9 +609,12 @@ func (p *ProgressBar) Add64(num int64) error {
 }
 
 // AddDetail adds a detail to the progress bar. Only used when maxDetailRow is set to a value greater than 0
-func (p *ProgressBar) AddDetail(detail string) {
+func (p *ProgressBar) AddDetail(detail string) error {
 	if p.config.maxDetailRow == 0 {
-		return
+		return errors.New("maxDetailRow is set to 0, cannot add detail")
+	}
+	if p.IsFinished() {
+		return errors.New("cannot add detail to a finished progress bar")
 	}
 
 	p.lock.Lock()
@@ -619,13 +622,18 @@ func (p *ProgressBar) AddDetail(detail string) {
 	if p.state.details == nil {
 		// if we add a detail before the first add, it will be weird that we have detail but don't have the progress bar in the top.
 		// so when we add the first detail, we will render the progress bar first.
-		p.render()
+		if err := p.render(); err != nil {
+			return err
+		}
 	}
 	p.state.details = append(p.state.details, detail)
 	if len(p.state.details) > p.config.maxDetailRow {
 		p.state.details = p.state.details[1:]
 	}
-	p.renderDetails()
+	if err := p.renderDetails(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // renderDetails renders the details of the progress bar
