@@ -314,6 +314,7 @@ func OptionShowDescriptionAtLineEnd() Option {
 }
 
 // OptionSetMaxDetailRow sets the max row of details
+// the row count should be less than the terminal height, otherwise it will not give you the output you want
 func OptionSetMaxDetailRow(row int) Option {
 	return func(p *ProgressBar) {
 		p.config.maxDetailRow = row
