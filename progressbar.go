@@ -56,6 +56,8 @@ type state struct {
 	finished     bool
 	exit         bool // Progress bar exit halfway
 
+	details []string // details to show,only used when detail row is set to more than 0
+
 	rendered string
 }
 
@@ -122,6 +124,9 @@ type config struct {
 
 	// showDescriptionAtLineEnd specifies whether description should be written at line end instead of line start
 	showDescriptionAtLineEnd bool
+
+	// specifies how many rows of details to show,default value is 0 and no details will be shown
+	maxDetailRow int
 
 	stdBuffer bytes.Buffer
 }
@@ -305,6 +310,13 @@ func OptionUseIECUnits(val bool) Option {
 func OptionShowDescriptionAtLineEnd() Option {
 	return func(p *ProgressBar) {
 		p.config.showDescriptionAtLineEnd = true
+	}
+}
+
+// OptionSetMaxDetailRow sets the max row of details
+func OptionSetMaxDetailRow(row int) Option {
+	return func(p *ProgressBar) {
+		p.config.maxDetailRow = row
 	}
 }
 
@@ -596,6 +608,58 @@ func (p *ProgressBar) Add64(num int64) error {
 	return nil
 }
 
+// AddDetail adds a detail to the progress bar. Only used when maxDetailRow is set to a value greater than 0
+func (p *ProgressBar) AddDetail(detail string) {
+	if p.config.maxDetailRow == 0 {
+		return
+	}
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.state.details == nil {
+		// if we add a detail before the first add, it will be weird that we have detail but don't have the progress bar in the top.
+		// so when we add the first detail, we will render the progress bar first.
+		p.render()
+	}
+	p.state.details = append(p.state.details, detail)
+	if len(p.state.details) > p.config.maxDetailRow {
+		p.state.details = p.state.details[1:]
+	}
+	p.renderDetails()
+}
+
+// renderDetails renders the details of the progress bar
+func (p *ProgressBar) renderDetails() error {
+	if p.config.invisible {
+		return nil
+	}
+	if p.state.finished {
+		return nil
+	}
+	if p.config.maxDetailRow == 0 {
+		return nil
+	}
+
+	b := strings.Builder{}
+	b.WriteString("\n")
+
+	// render the details row
+	for _, detail := range p.state.details {
+		b.WriteString(fmt.Sprintf("\u001B[K\r%s\n", detail))
+	}
+	// add empty lines to fill the maxDetailRow
+	for i := len(p.state.details); i < p.config.maxDetailRow; i++ {
+		b.WriteString("\u001B[K\n")
+	}
+
+	// move the cursor up to the start of the details row
+	b.WriteString(fmt.Sprintf("\u001B[%dF", p.config.maxDetailRow+1))
+
+	writeString(p.config, b.String())
+
+	return nil
+}
+
 // Clear erases the progress bar from the current line
 func (p *ProgressBar) Clear() error {
 	return clearProgressBar(p.config, p.state)
@@ -694,6 +758,11 @@ func (p *ProgressBar) render() error {
 		if !p.config.clearOnFinish {
 			io.Copy(p.config.writer, &p.config.stdBuffer)
 			renderProgressBar(p.config, &p.state)
+		}
+		if p.config.maxDetailRow > 0 {
+			p.renderDetails()
+			// put the cursor back to the last line of the details
+			writeString(p.config, fmt.Sprintf("\u001B[%dB\r\u001B[%dC", p.config.maxDetailRow, len(p.state.details[len(p.state.details)-1])))
 		}
 		if p.config.onCompletion != nil {
 			p.config.onCompletion()
