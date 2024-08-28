@@ -354,6 +354,10 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		panic("invalid spinner type, must be between 0 and 75")
 	}
 
+	if b.config.maxDetailRow < 0 {
+		panic("invalid max detail row, must be greater than 0")
+	}
+
 	// ignoreLength if max bytes not known
 	if b.config.max == -1 {
 		b.config.ignoreLength = true
