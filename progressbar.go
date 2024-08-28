@@ -343,9 +343,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 
 	// ignoreLength if max bytes not known
 	if b.config.max == -1 {
-		b.config.ignoreLength = true
-		b.config.max = int64(b.config.width)
-		b.config.predictTime = false
+		b.lengthUnknown()
 	}
 
 	b.config.maxHumanized, b.config.maxHumanizedSuffix = humanizeBytes(float64(b.config.max),
@@ -656,6 +654,7 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 			p.config.useIECUnits)
 	}
 
+	p.lengthKnown(newMax)
 	p.lock.Unlock() // so p.Add can lock
 
 	p.Add(0) // re-render
@@ -724,6 +723,20 @@ func (p *ProgressBar) render() error {
 	p.state.lastShown = time.Now()
 
 	return nil
+}
+
+// lengthUnknown sets the progress bar to ignore the length
+func (p *ProgressBar) lengthUnknown() {
+	p.config.ignoreLength = true
+	p.config.max = int64(p.config.width)
+	p.config.predictTime = false
+}
+
+// lengthKnown sets the progress bar to do not ignore the length
+func (p *ProgressBar) lengthKnown(max int64) {
+	p.config.ignoreLength = false
+	p.config.max = max
+	p.config.predictTime = true
 }
 
 // State returns the current state
