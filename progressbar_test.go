@@ -375,6 +375,7 @@ func TestBarSmallBytes(t *testing.T) {
 func TestBarFastBytes(t *testing.T) {
 	buf := strings.Builder{}
 	bar := NewOptions64(1e8, OptionShowBytes(true), OptionShowCount(), OptionSetWidth(10), OptionSetWriter(&buf))
+	bar.StartWithoutRender()
 	time.Sleep(time.Millisecond)
 	bar.Add(1e7)
 	if !strings.Contains(buf.String(), " GB/s)") {
@@ -889,6 +890,7 @@ func TestOptionFullWidth(t *testing.T) {
 			t.Parallel()
 			buf := strings.Builder{}
 			bar := NewOptions(100, append(test.opts, []Option{OptionFullWidth(), OptionSetWriter(&buf)}...)...)
+			bar.StartWithoutRender()
 			time.Sleep(1 * time.Second)
 			bar.Add(10)
 			time.Sleep(1 * time.Second)
@@ -912,4 +914,18 @@ func TestHumanizeBytesIEC(t *testing.T) {
 
 	amount, suffix = humanizeBytes(float64(56.78)*1024*1024*1024, true)
 	assert.Equal(t, "57 GiB", fmt.Sprintf("%s%s", amount, suffix))
+}
+
+func TestProgressBar_StartWithoutRender(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100, OptionSetWriter(&buf))
+	time.Sleep(1 * time.Second)
+	bar.StartWithoutRender()
+	time.Sleep(1 * time.Second)
+	bar.Add(10)
+	result := strings.TrimSpace(buf.String())
+	expect := "10% |████                                    |  [1s:9s]"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
 }
