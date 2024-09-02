@@ -19,7 +19,7 @@ go get -u github.com/schollz/progressbar/v3
 ### Basic usage
 
 ```golang
-bar := progressbar.Default(100)
+bar := progressbar.New(100)
 for i := 0; i < 100; i++ {
     bar.Add(1)
     time.Sleep(40 * time.Millisecond)
