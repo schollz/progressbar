@@ -7,7 +7,7 @@ require (
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db
 	github.com/rivo/uniseg v0.4.7
 	github.com/stretchr/testify v1.3.0
-	golang.org/x/term v0.22.0
+	golang.org/x/term v0.24.0
 )
 
 go 1.13
