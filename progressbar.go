@@ -1153,6 +1153,8 @@ func shouldCacheOutput(pb *ProgressBar) bool {
 }
 
 func Bprintln(pb *ProgressBar, a ...interface{}) (int, error) {
+	pb.lock.Lock()
+	defer pb.lock.Unlock()
 	if !shouldCacheOutput(pb) {
 		return fmt.Fprintln(pb.config.writer, a...)
 	} else {
@@ -1161,6 +1163,8 @@ func Bprintln(pb *ProgressBar, a ...interface{}) (int, error) {
 }
 
 func Bprintf(pb *ProgressBar, format string, a ...interface{}) (int, error) {
+	pb.lock.Lock()
+	defer pb.lock.Unlock()
 	if !shouldCacheOutput(pb) {
 		return fmt.Fprintf(pb.config.writer, format, a...)
 	} else {
