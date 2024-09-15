@@ -45,7 +45,7 @@ type state struct {
 	isAltSaucerHead   bool
 
 	lastShown time.Time
-	startTime time.Time
+	startTime time.Time // time when the progress bar start working
 
 	counterTime         time.Time
 	counterNumSinceLast int64
@@ -331,7 +331,11 @@ func NewOptions(max int, options ...Option) *ProgressBar {
 // NewOptions64 constructs a new instance of ProgressBar, with any options you specify
 func NewOptions64(max int64, options ...Option) *ProgressBar {
 	b := ProgressBar{
-		state: getBasicState(),
+		state: state{
+			startTime:   time.Time{},
+			lastShown:   time.Time{},
+			counterTime: time.Time{},
+		},
 		config: config{
 			writer:           os.Stdout,
 			theme:            defaultTheme,
@@ -503,6 +507,24 @@ func (p *ProgressBar) RenderBlank() error {
 	return p.render()
 }
 
+// StartWithoutRender will start the progress bar without rendering it
+// this method is created for the use case where you want to start the progress
+// but don't want to render it immediately.
+// If you want to start the progress and render it immediately, use RenderBlank instead,
+// or maybe you can use Add to start it automatically, but it will make the time calculation less precise.
+func (p *ProgressBar) StartWithoutRender() {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if p.IsStarted() {
+		return
+	}
+
+	p.state.startTime = time.Now()
+	// the counterTime should be set to the current time
+	p.state.counterTime = time.Now()
+}
+
 // Reset will reset the clock that is used
 // to calculate current time and the time left.
 func (p *ProgressBar) Reset() {
@@ -583,6 +605,10 @@ func (p *ProgressBar) Add64(num int64) error {
 	}
 
 	p.state.currentBytes += float64(num)
+
+	if p.state.counterTime.IsZero() {
+		p.state.counterTime = time.Now()
+	}
 
 	// reset the countdown timer every second to take rolling average
 	p.state.counterNumSinceLast += num
@@ -746,13 +772,20 @@ func (p *ProgressBar) IsFinished() bool {
 	return p.state.finished
 }
 
+// IsStarted returns true if progress bar is started
+func (p *ProgressBar) IsStarted() bool {
+	return !p.state.startTime.IsZero()
+}
+
 // render renders the progress bar, updating the maximum
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
 func (p *ProgressBar) render() error {
 	// make sure that the rendering is not happening too quickly
 	// but always show if the currentNum reaches the max
-	if time.Since(p.state.lastShown).Nanoseconds() < p.config.throttleDuration.Nanoseconds() &&
+	if !p.IsStarted() {
+		p.state.startTime = time.Now()
+	} else if time.Since(p.state.lastShown).Nanoseconds() < p.config.throttleDuration.Nanoseconds() &&
 		p.state.currentNum < p.config.max {
 		return nil
 	}
@@ -820,7 +853,12 @@ func (p *ProgressBar) State() State {
 	}
 	s.CurrentPercent = float64(p.state.currentNum) / float64(p.config.max)
 	s.CurrentBytes = p.state.currentBytes
-	s.SecondsSince = time.Since(p.state.startTime).Seconds()
+	if p.IsStarted() {
+		s.SecondsSince = time.Since(p.state.startTime).Seconds()
+	} else {
+		s.SecondsSince = 0
+	}
+
 	if p.state.currentNum > 0 {
 		s.SecondsLeft = s.SecondsSince / float64(p.state.currentNum) * (float64(p.config.max) - float64(p.state.currentNum))
 	}
