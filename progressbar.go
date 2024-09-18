@@ -50,6 +50,7 @@ type state struct {
 	counterTime         time.Time
 	counterNumSinceLast int64
 	counterLastTenRates []float64
+	spinnerIdx          int // the index of spinner
 
 	maxLineWidth int
 	currentBytes float64
@@ -105,6 +106,11 @@ type config struct {
 	// spinnerTypeOptionUsed remembers if the spinnerType was changed manually
 	spinnerTypeOptionUsed bool
 
+	// spinnerChangeInterval the change interval of spinner
+	// if set this attribute to 0, the spinner only change when renderProgressBar was called
+	// for example, each time when Add() was called,which will call renderProgressBar function
+	spinnerChangeInterval time.Duration
+
 	// spinner represents the spinner as a slice of string
 	spinner []string
 
@@ -148,6 +154,18 @@ type Option func(p *ProgressBar)
 func OptionSetWidth(s int) Option {
 	return func(p *ProgressBar) {
 		p.config.width = s
+	}
+}
+
+// OptionSetSpinnerChangeInterval sets the spinner change interval
+// the spinner will change according to this value.
+// By default, this value is 100 * time.Millisecond
+// If you don't want to let this progressbar update by specified time interval
+// you can  set this value to zero, then the spinner will change each time rendered,
+// such as when Add() or Describe() was called
+func OptionSetSpinnerChangeInterval(interval time.Duration) Option {
+	return func(p *ProgressBar) {
+		p.config.spinnerChangeInterval = interval
 	}
 }
 
@@ -337,16 +355,17 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			counterTime: time.Time{},
 		},
 		config: config{
-			writer:           os.Stdout,
-			theme:            defaultTheme,
-			iterationString:  "it",
-			width:            40,
-			max:              max,
-			throttleDuration: 0 * time.Nanosecond,
-			elapsedTime:      max == -1,
-			predictTime:      true,
-			spinnerType:      9,
-			invisible:        false,
+			writer:                os.Stdout,
+			theme:                 defaultTheme,
+			iterationString:       "it",
+			width:                 40,
+			max:                   max,
+			throttleDuration:      0 * time.Nanosecond,
+			elapsedTime:           max == -1,
+			predictTime:           true,
+			spinnerType:           9,
+			invisible:             false,
+			spinnerChangeInterval: 100 * time.Millisecond,
 		},
 	}
 
@@ -372,6 +391,27 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 
 	if b.config.renderWithBlankState {
 		b.RenderBlank()
+	}
+
+	// if the render time interval attribute is set
+	if b.config.spinnerChangeInterval != 0 {
+		go func() {
+			ticker := time.NewTicker(b.config.spinnerChangeInterval)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					if b.IsFinished() {
+						return
+					}
+					if b.IsStarted() {
+						b.lock.Lock()
+						b.render()
+						b.lock.Unlock()
+					}
+				}
+			}
+		}()
 	}
 
 	return &b
@@ -1058,7 +1098,16 @@ func renderProgressBar(c config, s *state) (int, error) {
 		if len(c.spinner) > 0 {
 			selectedSpinner = c.spinner
 		}
-		spinner := selectedSpinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Milliseconds()/100), float64(len(selectedSpinner)))))]
+
+		var spinner string
+		if c.spinnerChangeInterval != 0 {
+			// if the spinner is changed according to an interval, calculate it
+			spinner = selectedSpinner[int(math.Round(math.Mod(float64(time.Since(s.startTime).Nanoseconds()/c.spinnerChangeInterval.Nanoseconds()), float64(len(selectedSpinner)))))]
+		} else {
+			// if the spinner is changed according to the number render was called
+			spinner = selectedSpinner[s.spinnerIdx]
+			s.spinnerIdx = (s.spinnerIdx + 1) % len(selectedSpinner)
+		}
 		if c.elapsedTime {
 			if c.showDescriptionAtLineEnd {
 				str = fmt.Sprintf("\r%s %s [%s] %s ",
