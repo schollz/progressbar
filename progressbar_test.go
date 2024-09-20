@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/chengxilo/virtualterm"
 	"io"
 	"net/http"
 	"os"
@@ -101,10 +102,8 @@ func TestSpinnerClearOnFinish(t *testing.T) {
 	bar.Add(10)
 	time.Sleep(1 * time.Second)
 	bar.Finish()
-	result := buf.String()
-	expect := "" +
-		"\r-  (10 B, 10 B/s, 10 it/s) [1s] " +
-		"\r                                \r"
+	result, _ := virtualterm.Process(buf.String())
+	expect := "                                "
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
