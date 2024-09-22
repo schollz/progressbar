@@ -396,6 +396,9 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 	// if the render time interval attribute is set
 	if b.config.spinnerChangeInterval != 0 {
 		go func() {
+			if b.config.invisible {
+				return
+			}
 			ticker := time.NewTicker(b.config.spinnerChangeInterval)
 			defer ticker.Stop()
 			for {
