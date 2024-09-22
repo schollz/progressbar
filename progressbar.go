@@ -399,6 +399,9 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			if b.config.invisible {
 				return
 			}
+			if !b.config.ignoreLength {
+				return
+			}
 			ticker := time.NewTicker(b.config.spinnerChangeInterval)
 			defer ticker.Stop()
 			for {
