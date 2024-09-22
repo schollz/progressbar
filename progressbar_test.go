@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/chengxilo/virtualterm"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -126,11 +127,12 @@ func TestSpinnerFinish(t *testing.T) {
 	bar.Add(10)
 	time.Sleep(1 * time.Second)
 	bar.Finish()
-	result := buf.String()
-	expect := "" +
-		"\r-  (10 B, 10 B/s, 10 it/s) [1s] " +
-		"\r                                \r" +
-		"\r|  (10 B,  5 B/s, 5 it/s) [2s] "
+	result, err := virtualterm.Process(buf.String())
+	if err != nil {
+		t.Error(err)
+	}
+	// the "\r \r"
+	expect := "|  (10 B,  5 B/s, 5 it/s) [2s]  "
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
@@ -213,15 +215,21 @@ func ExampleOptionShowIts_spinner() {
 	/*
 		Spinner test with iteration count and iteration rate
 	*/
+	vt := virtualterm.NewDefault()
 	bar := NewOptions(-1,
 		OptionSetWidth(10),
 		OptionShowIts(),
 		OptionShowCount(),
+		OptionSetWriter(&vt),
 	)
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(5)
-
+	s, err := vt.String()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(s)
 	// Output:
 	// -  (5/-, 5 it/s) [1s]
 }
@@ -318,9 +326,11 @@ func ExampleOptionShowBytes_spinner() {
 	/*
 		Spinner test with iterations and count
 	*/
+	buf := strings.Builder{}
 	bar := NewOptions(-1,
 		OptionSetWidth(10),
 		OptionShowBytes(true),
+		OptionSetWriter(&buf),
 	)
 
 	bar.Reset()
@@ -328,7 +338,8 @@ func ExampleOptionShowBytes_spinner() {
 	// since 10 is the width and we don't know the max bytes
 	// it will do a infinite scrolling.
 	bar.Add(11)
-
+	result, _ := virtualterm.Process(buf.String())
+	fmt.Print(result)
 	// Output:
 	// -  (11 B/s) [1s]
 }
@@ -494,7 +505,11 @@ func TestOptionSetElapsedTime_spinner(t *testing.T) {
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(5)
-	result := strings.TrimSpace(buf.String())
+	result, err := virtualterm.Process(buf.String())
+	result = strings.TrimSpace(result)
+	if err != nil {
+		t.Fatal(err)
+	}
 	expect := "-  (5/-, 5 it/s)"
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
@@ -926,5 +941,62 @@ func TestProgressBar_StartWithoutRender(t *testing.T) {
 	expect := "10% |████                                    |  [1s:9s]"
 	if result != expect {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
+func TestOptionSetSpinnerChangeInterval(t *testing.T) {
+	interval := 1000 * time.Millisecond
+	vt := virtualterm.NewDefault()
+	actuals := make([]string, 0, 8)
+	expecteds := []string{
+		"◐ test  [0s]",
+		"◓ test  [1s]",
+		"◑ test  [2s]",
+		"◒ test  [3s]",
+		"◐ test  [4s]",
+		"◓ test  [5s]",
+		"◑ test  [6s]",
+		"◒ test  [7s]",
+	}
+	bar := NewOptions(-1,
+		OptionSetDescription("test"),
+		OptionSpinnerType(7),
+		OptionSetWriter(&vt),
+		OptionSetSpinnerChangeInterval(interval))
+	bar.Add(1)
+	for i := 0; i < 8; i++ {
+		s, _ := vt.String()
+		s = strings.TrimSpace(s)
+		actuals = append(actuals, s)
+		// sleep 50 ms more to make sure to go to next interval each time
+		time.Sleep(1050 * time.Millisecond)
+	}
+	for i := range actuals {
+		assert.Equal(t, expecteds[i], actuals[i])
+	}
+}
+
+func TestOptionSetSpinnerChangeIntervalZero(t *testing.T) {
+	vt := virtualterm.NewDefault()
+	bar := NewOptions(-1,
+		OptionSetDescription("test"),
+		OptionSpinnerType(7),
+		OptionSetWriter(&vt),
+		OptionSetSpinnerChangeInterval(0))
+	actuals := make([]string, 0, 5)
+	expected := []string{
+		"◐ test  [0s]",
+		"◓ test  [1s]",
+		"◑ test  [2s]",
+		"◒ test  [3s]",
+		"◐ test  [4s]",
+	}
+	for i := 0; i < 5; i++ {
+		bar.Add(1)
+		s, _ := vt.String()
+		s = strings.TrimSpace(s)
+	}
+	for i := range actuals {
+		assert.Equal(t, expected[i], actuals[i])
 	}
 }
