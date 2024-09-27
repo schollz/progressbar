@@ -225,7 +225,9 @@ func ExampleOptionShowIts_spinner() {
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(5)
+	bar.lock.Lock()
 	s, err := vt.String()
+	bar.lock.Unlock()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -338,7 +340,9 @@ func ExampleOptionShowBytes_spinner() {
 	// since 10 is the width and we don't know the max bytes
 	// it will do a infinite scrolling.
 	bar.Add(11)
+	bar.lock.Lock()
 	result, _ := virtualterm.Process(buf.String())
+	bar.lock.Unlock()
 	fmt.Print(result)
 	// Output:
 	// -  (11 B/s) [1s]
@@ -505,7 +509,9 @@ func TestOptionSetElapsedTime_spinner(t *testing.T) {
 	bar.Reset()
 	time.Sleep(1 * time.Second)
 	bar.Add(5)
+	bar.lock.Lock()
 	result, err := virtualterm.Process(buf.String())
+	bar.lock.Unlock()
 	result = strings.TrimSpace(result)
 	if err != nil {
 		t.Fatal(err)
@@ -965,7 +971,9 @@ func TestOptionSetSpinnerChangeInterval(t *testing.T) {
 		OptionSetSpinnerChangeInterval(interval))
 	bar.Add(1)
 	for i := 0; i < 8; i++ {
+		bar.lock.Lock()
 		s, _ := vt.String()
+		bar.lock.Unlock()
 		s = strings.TrimSpace(s)
 		actuals = append(actuals, s)
 		// sleep 50 ms more to make sure to go to next interval each time
@@ -993,7 +1001,9 @@ func TestOptionSetSpinnerChangeIntervalZero(t *testing.T) {
 	}
 	for i := 0; i < 5; i++ {
 		bar.Add(1)
+		bar.lock.Lock()
 		s, _ := vt.String()
+		bar.lock.Unlock()
 		s = strings.TrimSpace(s)
 	}
 	for i := range actuals {
