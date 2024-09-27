@@ -23,4 +23,4 @@ jobs:
       run: go vet .
 
     - name: Run go test
-      run: go test -v -cover -vet=off .
+      run: go test -race -v -cover -vet=off .
