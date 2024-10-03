@@ -145,7 +145,45 @@ type Theme struct {
 	SaucerPadding string
 	BarStart      string
 	BarEnd        string
+
+	// BarStartFilled is used after the Bar starts filling, if set. Otherwise, it defaults to BarStart.
+	BarStartFilled string
+
+	// BarEndFilled is used once the Bar finishes, if set. Otherwise, it defaults to BarEnd.
+	BarEndFilled string
 }
+
+var (
+	// ThemeDefault is given by default (if not changed with OptionSetTheme), and it looks like "|████     |".
+	ThemeDefault = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
+
+	// ThemeASCII is a predefined Theme that uses ASCII symbols. It looks like "[===>...]".
+	// Configure it with OptionSetTheme(ThemeASCII).
+	ThemeASCII = Theme{
+		Saucer:        "=",
+		SaucerHead:    ">",
+		SaucerPadding: ".",
+		BarStart:      "[",
+		BarEnd:        "]",
+	}
+
+	// ThemeUnicode is a predefined Theme that uses Unicode characters, displaying a graphic bar.
+	// It looks like "" (rendering will depend on font being used).
+	// It requires special symbols usually found in "nerd fonts" [2], or in Fira Code [1], and other sources.
+	// Configure it with OptionSetTheme(ThemeUnicode).
+	//
+	// [1] https://github.com/tonsky/FiraCode
+	// [2] https://www.nerdfonts.com/
+	ThemeUnicode = Theme{
+		Saucer:         "\uEE04", // 
+		SaucerHead:     "\uEE04", // 
+		SaucerPadding:  "\uEE01", // 
+		BarStart:       "\uEE00", // 
+		BarStartFilled: "\uEE03", // 
+		BarEnd:         "\uEE02", // 
+		BarEndFilled:   "\uEE05", // 
+	}
+)
 
 // Option is the type all options need to adhere to
 type Option func(p *ProgressBar)
@@ -185,7 +223,8 @@ func OptionSpinnerCustom(spinner []string) Option {
 	}
 }
 
-// OptionSetTheme sets the elements the bar is constructed of
+// OptionSetTheme sets the elements the bar is constructed with.
+// There are two pre-defined themes you can use: ThemeASCII and ThemeUnicode.
 func OptionSetTheme(t Theme) Option {
 	return func(p *ProgressBar) {
 		p.config.theme = t
@@ -263,7 +302,7 @@ func OptionShowIts() Option {
 	}
 }
 
-// OptionShowElapsedOnFinish will keep the display of elapsed time on finish
+// OptionShowElapsedTimeOnFinish will keep the display of elapsed time on finish.
 func OptionShowElapsedTimeOnFinish() Option {
 	return func(p *ProgressBar) {
 		p.config.showElapsedTimeOnFinish = true
@@ -285,7 +324,7 @@ func OptionThrottle(duration time.Duration) Option {
 	}
 }
 
-// OptionClearOnFinish will clear the bar once its finished
+// OptionClearOnFinish will clear the bar once its finished.
 func OptionClearOnFinish() Option {
 	return func(p *ProgressBar) {
 		p.config.clearOnFinish = true
@@ -339,8 +378,6 @@ func OptionSetMaxDetailRow(row int) Option {
 	}
 }
 
-var defaultTheme = Theme{Saucer: "█", SaucerPadding: " ", BarStart: "|", BarEnd: "|"}
-
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
 func NewOptions(max int, options ...Option) *ProgressBar {
 	return NewOptions64(int64(max), options...)
@@ -356,7 +393,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		},
 		config: config{
 			writer:                os.Stdout,
-			theme:                 defaultTheme,
+			theme:                 ThemeDefault,
 			iterationString:       "it",
 			width:                 40,
 			max:                   max,
@@ -830,10 +867,12 @@ func (p *ProgressBar) render() error {
 	}
 
 	if !p.config.useANSICodes {
-		// first, clear the existing progress bar
-		err := clearProgressBar(p.config, p.state)
-		if err != nil {
-			return err
+		// first, clear the existing progress bar, if not yet finished.
+		if !p.state.finished {
+			err := clearProgressBar(p.config, p.state)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -1021,6 +1060,10 @@ func renderProgressBar(c config, s *state) (int, error) {
 	}
 
 	leftBrac, rightBrac, saucer, saucerHead := "", "", "", ""
+	barStart, barEnd := c.theme.BarStart, c.theme.BarEnd
+	if s.finished && c.theme.BarEndFilled != "" {
+		barEnd = c.theme.BarEndFilled
+	}
 
 	// show time prediction in "current/total" seconds format
 	switch {
@@ -1056,6 +1099,9 @@ func renderProgressBar(c config, s *state) (int, error) {
 
 		c.width = width - getStringWidth(c, c.description, true) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
+	}
+	if (s.currentSaucerSize > 0 || s.currentPercent > 0) && c.theme.BarStartFilled != "" {
+		barStart = c.theme.BarStartFilled
 	}
 	if s.currentSaucerSize > 0 {
 		if c.ignoreLength {
@@ -1138,11 +1184,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 	} else if rightBrac == "" {
 		str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
 			s.currentPercent,
-			c.theme.BarStart,
+			barStart,
 			saucer,
 			saucerHead,
 			strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-			c.theme.BarEnd,
+			barEnd,
 			sb.String())
 		if (s.currentPercent == 100 && c.showElapsedTimeOnFinish) || c.elapsedTime {
 			str = fmt.Sprintf("%s [%s]", str, leftBrac)
@@ -1157,11 +1203,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 		if s.currentPercent == 100 {
 			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s",
 				s.currentPercent,
-				c.theme.BarStart,
+				barStart,
 				saucer,
 				saucerHead,
 				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-				c.theme.BarEnd,
+				barEnd,
 				sb.String())
 
 			if c.showElapsedTimeOnFinish {
@@ -1176,11 +1222,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 		} else {
 			str = fmt.Sprintf("%4d%% %s%s%s%s%s %s [%s:%s]",
 				s.currentPercent,
-				c.theme.BarStart,
+				barStart,
 				saucer,
 				saucerHead,
 				strings.Repeat(c.theme.SaucerPadding, repeatAmount),
-				c.theme.BarEnd,
+				barEnd,
 				sb.String(),
 				leftBrac,
 				rightBrac)
