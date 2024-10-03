@@ -452,14 +452,67 @@ func TestOptionSetTheme(t *testing.T) {
 	buf := strings.Builder{}
 	bar := NewOptions(
 		10,
-		OptionSetTheme(Theme{Saucer: "#", SaucerPadding: "-", BarStart: ">", BarEnd: "<"}),
+		OptionSetTheme(
+			Theme{Saucer: "#", SaucerPadding: "-",
+				BarStart: ">", BarEnd: "<"}),
 		OptionSetWidth(10),
 		OptionSetWriter(&buf),
 	)
-	bar.Add(5)
+	bar.RenderBlank()
 	result := strings.TrimSpace(buf.String())
-	expect := "50% >#####-----<  [0s:0s]"
+	expect := "0% >----------<"
+	if strings.Index(result, expect) == -1 {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+	buf.Reset()
+
+	bar.Add(5)
+	result = strings.TrimSpace(buf.String())
+	expect = "50% >#####-----<  [0s:0s]"
 	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+	buf.Reset()
+
+	bar.Finish()
+	result = strings.TrimSpace(buf.String())
+	expect = "100% >##########<"
+	if strings.Index(result, expect) == -1 {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+}
+
+func TestOptionSetThemeFilled(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(
+		10,
+		OptionSetTheme(
+			Theme{Saucer: "#", SaucerPadding: "-",
+				BarStart: ">", BarStartFilled: "]",
+				BarEnd: "<", BarEndFilled: "["}),
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+	)
+	bar.RenderBlank()
+	result := strings.TrimSpace(buf.String())
+	expect := "0% >----------<"
+	if strings.Index(result, expect) == -1 {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+	buf.Reset()
+
+	bar.Add(5)
+	result = strings.TrimSpace(buf.String())
+	expect = "50% ]#####-----<  [0s:0s]"
+	if result != expect {
+		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	}
+	buf.Reset()
+
+	bar.Finish()
+	result = strings.TrimSpace(buf.String())
+	expect = "100% ]##########["
+	if strings.Index(result, expect) == -1 {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }

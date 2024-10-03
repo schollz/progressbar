@@ -867,10 +867,12 @@ func (p *ProgressBar) render() error {
 	}
 
 	if !p.config.useANSICodes {
-		// first, clear the existing progress bar
-		err := clearProgressBar(p.config, p.state)
-		if err != nil {
-			return err
+		// first, clear the existing progress bar, if not yet finished.
+		if !p.state.finished {
+			err := clearProgressBar(p.config, p.state)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -897,10 +899,6 @@ func (p *ProgressBar) render() error {
 			if err != nil {
 				return err
 			}
-		} else if !p.config.clearOnFinish {
-			// Since bar was cleared, re-render it.
-			io.Copy(p.config.writer, &p.config.stdBuffer)
-			renderProgressBar(p.config, &p.state)
 		}
 		return nil
 	}
