@@ -83,6 +83,9 @@ type config struct {
 	showIterationsPerSecond bool
 	showIterationsCount     bool
 
+	// whether the progress bar should show the total bytes (e.g. 23/24 or 23/-, vs. just 23).
+	showTotalBytes bool
+
 	// whether the progress bar should show elapsed time.
 	// always enabled if predictTime is true.
 	elapsedTime bool
@@ -309,6 +312,13 @@ func OptionShowElapsedTimeOnFinish() Option {
 	}
 }
 
+// OptionShowTotalBytes will keep the display of total bytes.
+func OptionShowTotalBytes(flag bool) Option {
+	return func(p *ProgressBar) {
+		p.config.showTotalBytes = flag
+	}
+}
+
 // OptionSetItsString sets what's displayed for iterations a second. The default is "it" which would display: "it/s"
 func OptionSetItsString(iterationString string) Option {
 	return func(p *ProgressBar) {
@@ -403,6 +413,7 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			spinnerType:           9,
 			invisible:             false,
 			spinnerChangeInterval: 100 * time.Millisecond,
+			showTotalBytes:        true,
 		},
 	}
 
@@ -482,6 +493,7 @@ func DefaultBytes(maxBytes int64, description ...string) *ProgressBar {
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
 		OptionShowBytes(true),
+		OptionShowTotalBytes(true),
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
@@ -508,6 +520,7 @@ func DefaultBytesSilent(maxBytes int64, description ...string) *ProgressBar {
 		OptionSetDescription(desc),
 		OptionSetWriter(io.Discard),
 		OptionShowBytes(true),
+		OptionShowTotalBytes(true),
 		OptionSetWidth(10),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
@@ -528,6 +541,7 @@ func Default(max int64, description ...string) *ProgressBar {
 		OptionSetDescription(desc),
 		OptionSetWriter(os.Stderr),
 		OptionSetWidth(10),
+		OptionShowTotalBytes(true),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
 		OptionShowIts(),
@@ -554,6 +568,7 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 		OptionSetDescription(desc),
 		OptionSetWriter(io.Discard),
 		OptionSetWidth(10),
+		OptionShowTotalBytes(true),
 		OptionThrottle(65*time.Millisecond),
 		OptionShowCount(),
 		OptionShowIts(),
@@ -1010,21 +1025,32 @@ func renderProgressBar(c config, s *state) (int, error) {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				if currentSuffix == c.maxHumanizedSuffix {
-					sb.WriteString(fmt.Sprintf("%s/%s%s",
-						currentHumanize, c.maxHumanized, c.maxHumanizedSuffix))
-				} else {
+					if c.showTotalBytes {
+						sb.WriteString(fmt.Sprintf("%s/%s%s",
+							currentHumanize, c.maxHumanized, c.maxHumanizedSuffix))
+					} else {
+						sb.WriteString(fmt.Sprintf("%s%s",
+							currentHumanize, c.maxHumanizedSuffix))
+					}
+				} else if c.showTotalBytes {
 					sb.WriteString(fmt.Sprintf("%s%s/%s%s",
 						currentHumanize, currentSuffix, c.maxHumanized, c.maxHumanizedSuffix))
+				} else {
+					sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 				}
-			} else {
+			} else if c.showTotalBytes {
 				sb.WriteString(fmt.Sprintf("%.0f/%d", s.currentBytes, c.max))
+			} else {
+				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
 			}
 		} else {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
-			} else {
+			} else if c.showTotalBytes {
 				sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
+			} else {
+				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
 			}
 		}
 	}
