@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/chengxilo/virtualterm"
 	"io"
 	"log"
 	"net/http"
@@ -14,6 +13,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/chengxilo/virtualterm"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -1061,5 +1062,56 @@ func TestOptionSetSpinnerChangeIntervalZero(t *testing.T) {
 	}
 	for i := range actuals {
 		assert.Equal(t, expected[i], actuals[i])
+	}
+}
+
+func TestOptionShowTotalFalseDeterminate(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions64(
+		100000000,
+		OptionShowBytes(true),
+		OptionShowCount(),
+		OptionSetWidth(10),
+		OptionShowTotalBytes(false),
+		OptionSetWriter(&buf),
+	)
+
+	bar.Add(10000)
+	if !strings.Contains(buf.String(), "10 kB, ") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+}
+
+func TestOptionShowTotalFalseIndeterminate(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetDescription("indeterminate spinner"),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSpinnerType(9),
+		OptionShowTotalBytes(false),
+		OptionSetWriter(&buf),
+	)
+	bar.Add(10)
+	if !strings.Contains(buf.String(), "10, ") {
+		t.Errorf("wrong string: %s", buf.String())
+	}
+}
+
+func TestOptionShowTotalTrueIndeterminate(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetDescription("indeterminate spinner"),
+		OptionShowIts(),
+		OptionShowCount(),
+		OptionSpinnerType(9),
+		OptionShowTotalBytes(true),
+		OptionSetWriter(&buf),
+	)
+	bar.Add(10)
+	if !strings.Contains(buf.String(), "10/-, ") {
+		t.Errorf("wrong string: %s", buf.String())
 	}
 }
