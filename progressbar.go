@@ -859,6 +859,32 @@ func (p *ProgressBar) ChangeMax64(newMax int64) {
 	p.Add(0) // re-render
 }
 
+// AddMax takes in a int
+// and adds it to the max
+// value of the progress bar
+func (p *ProgressBar) AddMax(added int) {
+	p.AddMax64(int64(added))
+}
+
+// AddMax64 is basically
+// the same as AddMax,
+// but takes in a int64
+// to avoid casting
+func (p *ProgressBar) AddMax64(added int64) {
+	p.lock.Lock()
+
+	p.config.max += added
+
+	if p.config.showBytes {
+		p.config.maxHumanized, p.config.maxHumanizedSuffix = humanizeBytes(float64(p.config.max),
+			p.config.useIECUnits)
+	}
+
+	p.lock.Unlock() // so p.Add can lock
+
+	p.Add(0) // re-render
+}
+
 // IsFinished returns true if progress bar is completed
 func (p *ProgressBar) IsFinished() bool {
 	p.lock.Lock()
