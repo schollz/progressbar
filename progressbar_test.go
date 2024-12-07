@@ -212,6 +212,14 @@ func ExampleProgressBar_ChangeMax() {
 	// 100% |██████████|
 }
 
+func ExampleProgressBar_AddMax() {
+	bar := NewOptions(50, OptionSetWidth(10), OptionSetPredictTime(false))
+	bar.AddMax(50)
+	bar.Add(100)
+	// Output:
+	// 100% |██████████|
+}
+
 func ExampleOptionShowIts_spinner() {
 	/*
 		Spinner test with iteration count and iteration rate
