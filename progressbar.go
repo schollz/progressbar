@@ -880,6 +880,11 @@ func (p *ProgressBar) AddMax64(added int64) {
 			p.config.useIECUnits)
 	}
 
+	if p.config.max == -1 {
+		p.lengthUnknown()
+	} else {
+		p.lengthKnown(p.config.max)
+	}
 	p.lock.Unlock() // so p.Add can lock
 
 	p.Add(0) // re-render
