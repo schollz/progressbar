@@ -2,10 +2,13 @@ package progressbar
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -1007,6 +1010,31 @@ func (p *ProgressBar) State() State {
 	s.KBsPerSecond = float64(p.state.currentBytes) / 1024.0 / s.SecondsSince
 	s.Description = p.config.description
 	return s
+}
+
+// StartHTTPServer starts an HTTP server dedicated to serving progress bar updates. This allows you to
+// display the status in various UI elements, such as an OS status bar with an `xbar` extension.
+// It is recommended to run this function in a separate goroutine to avoid blocking the main thread.
+//
+// hostPort specifies the address and port to bind the server to, for example, "0.0.0.0:19999".
+func (p *ProgressBar) StartHTTPServer(hostPort string) {
+	// for advanced users, we can return the data as json
+	http.HandleFunc("/state", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/json")
+		// since the state is a simple struct, we can just ignore the error
+		bs, _ := json.Marshal(p.State())
+		w.Write(bs)
+	})
+	// for others, we just return the description in a plain text format
+	http.HandleFunc("/desc", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w,
+			"%d/%d, %.2f%%, %s left",
+			p.State().CurrentNum, p.State().Max, p.State().CurrentPercent*100,
+			(time.Second * time.Duration(p.State().SecondsLeft)).String(),
+		)
+	})
+	log.Fatal(http.ListenAndServe(hostPort, nil))
 }
 
 // regex matching ansi escape codes

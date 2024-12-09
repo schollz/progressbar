@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -1121,5 +1122,44 @@ func TestOptionShowTotalTrueIndeterminate(t *testing.T) {
 	bar.Add(10)
 	if !strings.Contains(buf.String(), "10/-, ") {
 		t.Errorf("wrong string: %s", buf.String())
+	}
+}
+
+func TestStartHTTPServer(t *testing.T) {
+	bar := Default(10, "test")
+	bar.Add(1)
+
+	hostPort := "localhost:9696"
+	go bar.StartHTTPServer(hostPort)
+
+	// check plain text
+	resp, err := http.Get(fmt.Sprintf("http://%s/desc", hostPort))
+	if err != nil {
+		t.Error(err)
+	}
+	got, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(got) != "1/10, 10.00%, 0s left" {
+		t.Errorf("wrong string: %s", string(got))
+	}
+
+	// check json
+	resp, err = http.Get(fmt.Sprintf("http://%s/state", hostPort))
+	if err != nil {
+		t.Error(err)
+	}
+	got, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+	}
+	var result State
+	err = json.Unmarshal(got, &result)
+	if err != nil {
+		t.Error(err)
+	}
+	if result.Max != bar.State().Max || result.CurrentNum != bar.State().CurrentNum {
+		t.Errorf("wrong state: %v", result)
 	}
 }
