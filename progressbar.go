@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"os"
@@ -1014,27 +1013,48 @@ func (p *ProgressBar) State() State {
 
 // StartHTTPServer starts an HTTP server dedicated to serving progress bar updates. This allows you to
 // display the status in various UI elements, such as an OS status bar with an `xbar` extension.
-// It is recommended to run this function in a separate goroutine to avoid blocking the main thread.
+// When the progress bar is finished, call `server.Shutdown()` or `server.Close()` to shut it down manually.
 //
 // hostPort specifies the address and port to bind the server to, for example, "0.0.0.0:19999".
-func (p *ProgressBar) StartHTTPServer(hostPort string) {
-	// for advanced users, we can return the data as json
-	http.HandleFunc("/state", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/json")
-		// since the state is a simple struct, we can just ignore the error
+func (p *ProgressBar) StartHTTPServer(hostPort string) *http.Server {
+	mux := http.NewServeMux()
+
+	// register routes
+	mux.HandleFunc("/state", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		bs, _ := json.Marshal(p.State())
 		w.Write(bs)
 	})
-	// for others, we just return the description in a plain text format
-	http.HandleFunc("/desc", func(w http.ResponseWriter, r *http.Request) {
+
+	mux.HandleFunc("/desc", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
+		state := p.State()
 		fmt.Fprintf(w,
 			"%d/%d, %.2f%%, %s left",
-			p.State().CurrentNum, p.State().Max, p.State().CurrentPercent*100,
-			(time.Second * time.Duration(p.State().SecondsLeft)).String(),
+			state.CurrentNum, state.Max, state.CurrentPercent*100,
+			(time.Second * time.Duration(state.SecondsLeft)).String(),
 		)
 	})
-	log.Fatal(http.ListenAndServe(hostPort, nil))
+
+	// create the server instance
+	server := &http.Server{
+		Addr:    hostPort,
+		Handler: mux,
+	}
+
+	// start the server in a goroutine and ignore errors
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				fmt.Println("encounter panic: ", err)
+			}
+		}()
+
+		_ = server.ListenAndServe()
+	}()
+
+	// return the server instance for use by the caller
+	return server
 }
 
 // regex matching ansi escape codes

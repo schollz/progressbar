@@ -2,6 +2,7 @@ package progressbar
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -1130,7 +1131,7 @@ func TestStartHTTPServer(t *testing.T) {
 	bar.Add(1)
 
 	hostPort := "localhost:9696"
-	go bar.StartHTTPServer(hostPort)
+	svr := bar.StartHTTPServer(hostPort)
 
 	// check plain text
 	resp, err := http.Get(fmt.Sprintf("http://%s/desc", hostPort))
@@ -1161,5 +1162,20 @@ func TestStartHTTPServer(t *testing.T) {
 	}
 	if result.Max != bar.State().Max || result.CurrentNum != bar.State().CurrentNum {
 		t.Errorf("wrong state: %v", result)
+	}
+
+	// shutdown server
+	err = svr.Shutdown(context.Background())
+	if err != nil {
+		t.Errorf("shutdown server failed: %v", err)
+	}
+
+	// start new bar server
+	bar = Default(10, "test")
+	bar.Add(1)
+	svr = bar.StartHTTPServer(hostPort)
+	err = svr.Close()
+	if err != nil {
+		t.Errorf("shutdown server failed: %v", err)
 	}
 }
