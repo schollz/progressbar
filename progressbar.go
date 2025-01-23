@@ -448,17 +448,15 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 		go func() {
 			ticker := time.NewTicker(b.config.spinnerChangeInterval)
 			defer ticker.Stop()
-			for {
-				select {
-				case <-ticker.C:
-					if b.IsFinished() {
-						return
-					}
-					if b.IsStarted() {
-						b.lock.Lock()
-						b.render()
-						b.lock.Unlock()
-					}
+
+			for range ticker.C {
+				if b.IsFinished() {
+					return
+				}
+				if b.IsStarted() {
+					b.lock.Lock()
+					b.render()
+					b.lock.Unlock()
 				}
 			}
 		}()

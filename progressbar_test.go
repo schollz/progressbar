@@ -472,7 +472,7 @@ func TestOptionSetTheme(t *testing.T) {
 	bar.RenderBlank()
 	result := strings.TrimSpace(buf.String())
 	expect := "0% >----------<"
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 	buf.Reset()
@@ -488,7 +488,7 @@ func TestOptionSetTheme(t *testing.T) {
 	bar.Finish()
 	result = strings.TrimSpace(buf.String())
 	expect = "100% >##########<"
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }
@@ -507,7 +507,7 @@ func TestOptionSetThemeFilled(t *testing.T) {
 	bar.RenderBlank()
 	result := strings.TrimSpace(buf.String())
 	expect := "0% >----------<"
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 	buf.Reset()
@@ -523,7 +523,7 @@ func TestOptionSetThemeFilled(t *testing.T) {
 	bar.Finish()
 	result = strings.TrimSpace(buf.String())
 	expect = "100% ]##########["
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }
@@ -1068,7 +1068,7 @@ func TestOptionSetSpinnerChangeIntervalZero(t *testing.T) {
 		bar.lock.Lock()
 		s, _ := vt.String()
 		bar.lock.Unlock()
-		s = strings.TrimSpace(s)
+		_ = strings.TrimSpace(s)
 	}
 	for i := range actuals {
 		assert.Equal(t, expected[i], actuals[i])
