@@ -936,7 +936,13 @@ func (p *ProgressBar) render() error {
 		if p.config.maxDetailRow > 0 {
 			p.renderDetails()
 			// put the cursor back to the last line of the details
-			writeString(p.config, fmt.Sprintf("\u001B[%dB\r\u001B[%dC", p.config.maxDetailRow, len(p.state.details[len(p.state.details)-1])))
+			var lastDetailLength int
+			if len(p.state.details) == 0 {
+				lastDetailLength = 0
+			} else {
+				lastDetailLength = len(p.state.details[len(p.state.details)-1])
+			}
+			writeString(p.config, fmt.Sprintf("\u001B[%dB\r\u001B[%dC", p.config.maxDetailRow, lastDetailLength))
 		}
 		if p.config.onCompletion != nil {
 			p.config.onCompletion()
