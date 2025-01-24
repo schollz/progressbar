@@ -2,6 +2,7 @@ package progressbar
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
@@ -471,7 +472,7 @@ func TestOptionSetTheme(t *testing.T) {
 	bar.RenderBlank()
 	result := strings.TrimSpace(buf.String())
 	expect := "0% >----------<"
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 	buf.Reset()
@@ -487,7 +488,7 @@ func TestOptionSetTheme(t *testing.T) {
 	bar.Finish()
 	result = strings.TrimSpace(buf.String())
 	expect = "100% >##########<"
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }
@@ -506,7 +507,7 @@ func TestOptionSetThemeFilled(t *testing.T) {
 	bar.RenderBlank()
 	result := strings.TrimSpace(buf.String())
 	expect := "0% >----------<"
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 	buf.Reset()
@@ -522,7 +523,7 @@ func TestOptionSetThemeFilled(t *testing.T) {
 	bar.Finish()
 	result = strings.TrimSpace(buf.String())
 	expect = "100% ]##########["
-	if strings.Index(result, expect) == -1 {
+	if !strings.Contains(result, expect) {
 		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
 	}
 }
@@ -1067,7 +1068,7 @@ func TestOptionSetSpinnerChangeIntervalZero(t *testing.T) {
 		bar.lock.Lock()
 		s, _ := vt.String()
 		bar.lock.Unlock()
-		s = strings.TrimSpace(s)
+		_ = strings.TrimSpace(s)
 	}
 	for i := range actuals {
 		assert.Equal(t, expected[i], actuals[i])
@@ -1130,7 +1131,7 @@ func TestStartHTTPServer(t *testing.T) {
 	bar.Add(1)
 
 	hostPort := "localhost:9696"
-	go bar.StartHTTPServer(hostPort)
+	svr := bar.StartHTTPServer(hostPort)
 
 	// check plain text
 	resp, err := http.Get(fmt.Sprintf("http://%s/desc", hostPort))
@@ -1161,5 +1162,20 @@ func TestStartHTTPServer(t *testing.T) {
 	}
 	if result.Max != bar.State().Max || result.CurrentNum != bar.State().CurrentNum {
 		t.Errorf("wrong state: %v", result)
+	}
+
+	// shutdown server
+	err = svr.Shutdown(context.Background())
+	if err != nil {
+		t.Errorf("shutdown server failed: %v", err)
+	}
+
+	// start new bar server
+	bar = Default(10, "test")
+	bar.Add(1)
+	svr = bar.StartHTTPServer(hostPort)
+	err = svr.Close()
+	if err != nil {
+		t.Errorf("shutdown server failed: %v", err)
 	}
 }
