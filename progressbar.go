@@ -1357,6 +1357,10 @@ func renderProgressBar(c config, s *state) (int, error) {
 		str = colorstring.Color(str)
 	}
 
+	if c.useANSICodes {
+		str = str + "\033[0K"
+	}
+
 	s.rendered = str
 
 	return getStringWidth(c, str, false), writeString(c, str)
