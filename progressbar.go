@@ -803,6 +803,13 @@ func (p *ProgressBar) Describe(description string) {
 	if p.config.invisible {
 		return
 	}
+	// if already finished, re-render with the new description
+	if p.state.finished && !p.config.clearOnFinish && !p.config.useANSICodes {
+		clearProgressBar(p.config, p.state)
+		io.Copy(p.config.writer, &p.config.stdBuffer)
+		renderProgressBar(p.config, &p.state)
+		return
+	}
 	p.render()
 }
 
