@@ -956,6 +956,11 @@ func (p *ProgressBar) render() error {
 				return err
 			}
 		}
+		// allow re-rendering when finished (e.g., when description is updated)
+		if !p.config.clearOnFinish {
+			io.Copy(p.config.writer, &p.config.stdBuffer)
+			renderProgressBar(p.config, &p.state)
+		}
 		return nil
 	}
 

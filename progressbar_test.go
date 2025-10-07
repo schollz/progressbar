@@ -853,6 +853,22 @@ func TestProgressBar_Describe(t *testing.T) {
 	}
 }
 
+func TestProgressBar_DescribeAfterFinish(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100,
+		OptionSetDescription("Uploading files"),
+		OptionShowCount(),
+		OptionSetWriter(&buf),
+		OptionSetWidth(10),
+	)
+	for i := 0; i < 100; i++ {
+		bar.Add(1)
+	}
+	bar.Describe("Upload complete")
+	result := buf.String()
+	assert.Contains(t, result, "Upload complete")
+}
+
 func TestRenderBlankStateWithThrottle(t *testing.T) {
 	buf := strings.Builder{}
 	bar := NewOptions(100, OptionSetWidth(10), OptionSetRenderBlankState(true), OptionThrottle(time.Millisecond), OptionSetWriter(&buf))
