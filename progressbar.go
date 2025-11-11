@@ -79,6 +79,8 @@ type config struct {
 
 	// whether the output is expected to contain color codes
 	colorCodes bool
+	// custom colors to use for colorCodes
+	customColors map[string]string
 
 	// show rate of change in kB/sec or MB/sec
 	showBytes bool
@@ -277,6 +279,14 @@ func OptionSetDescription(description string) Option {
 func OptionEnableColorCodes(colorCodes bool) Option {
 	return func(p *ProgressBar) {
 		p.config.colorCodes = colorCodes
+	}
+}
+
+// OptionSetCutomColorCodes overrides DefaultColors for color codes
+// using mitchellh/colorstring.Colorize in func customColorstringColor
+func OptionSetCustomColorCodes(customColors map[string]string) Option {
+	return func(p *ProgressBar) {
+		p.config.customColors = customColors
 	}
 }
 
@@ -1069,13 +1079,24 @@ func (p *ProgressBar) StartHTTPServer(hostPort string) *http.Server {
 	return server
 }
 
+// use customstring.Colorize to customize color palette
+func customColorstringColor(col map[string]string, str string) string {
+	cs := colorstring.Colorize{Colors: col, Reset: true}
+	return cs.Color(str)
+}
+
 // regex matching ansi escape codes
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
-func getStringWidth(c config, str string, colorize bool) int {
+func getStringWidth(c config, str string) int {
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
-		str = colorstring.Color(str)
+		// if customColors have been option set - create cs with Colorize
+		if len(c.customColors) > 0 {
+			str = customColorstringColor(c.customColors, str)
+		} else {
+			str = colorstring.Color(str)
+		}
 	}
 
 	// the width of the string, if printed to the console
@@ -1218,7 +1239,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			amend += 1 // another space
 		}
 
-		c.width = width - getStringWidth(c, c.description, true) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
+		c.width = width - getStringWidth(c, c.description) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if (s.currentSaucerSize > 0 || s.currentPercent > 0) && c.theme.BarStartFilled != "" {
@@ -1362,12 +1383,17 @@ func renderProgressBar(c config, s *state) (int, error) {
 
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
-		str = colorstring.Color(str)
+		// if customColors have been option set - create cs with Colorize
+		if len(c.customColors) > 0 {
+			str = customColorstringColor(c.customColors, str)
+		} else {
+			str = colorstring.Color(str)
+		}
 	}
 
 	s.rendered = str
 
-	return getStringWidth(c, str, false), writeString(c, str)
+	return getStringWidth(c, str), writeString(c, str)
 }
 
 func clearProgressBar(c config, s state) error {
