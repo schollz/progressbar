@@ -997,14 +997,12 @@ func (p *ProgressBar) render() error {
 func (p *ProgressBar) lengthUnknown() {
 	p.config.ignoreLength = true
 	p.config.max = int64(p.config.width)
-	p.config.predictTime = false
 }
 
 // lengthKnown sets the progress bar to do not ignore the length
 func (p *ProgressBar) lengthKnown(max int64) {
 	p.config.ignoreLength = false
 	p.config.max = max
-	p.config.predictTime = true
 }
 
 // State returns the current state
