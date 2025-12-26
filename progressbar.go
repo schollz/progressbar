@@ -1072,7 +1072,7 @@ func (p *ProgressBar) StartHTTPServer(hostPort string) *http.Server {
 // regex matching ansi escape codes
 var ansiRegex = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
-func getStringWidth(c config, str string, colorize bool) int {
+func getStringWidth(c config, str string) int {
 	if c.colorCodes {
 		// convert any color codes in the progress bar into the respective ANSI codes
 		str = colorstring.Color(str)
@@ -1218,7 +1218,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			amend += 1 // another space
 		}
 
-		c.width = width - getStringWidth(c, c.description, true) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
+		c.width = width - getStringWidth(c, c.description) - 10 - amend - sb.Len() - len(leftBrac) - len(rightBrac)
 		s.currentSaucerSize = int(float64(s.currentPercent) / 100.0 * float64(c.width))
 	}
 	if (s.currentSaucerSize > 0 || s.currentPercent > 0) && c.theme.BarStartFilled != "" {
@@ -1371,7 +1371,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 
 	s.rendered = str
 
-	return getStringWidth(c, str, false), writeString(c, str)
+	return getStringWidth(c, str), writeString(c, str)
 }
 
 func clearProgressBar(c config, s state) error {
