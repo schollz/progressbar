@@ -1304,7 +1304,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 			s.spinnerIdx = (s.spinnerIdx + 1) % len(selectedSpinner)
 		}
 		// if set add spinner color code
-		if c.spinnerColorCode != "" {
+		if c.spinnerColorCode != "" && c.colorCodes {
 			spinner = "[" + c.spinnerColorCode + "]" + spinner + "[reset]"
 		}
 		if c.elapsedTime {
