@@ -81,6 +81,8 @@ type config struct {
 	colorCodes bool
 	// custom colors to use for colorCodes
 	customColors map[string]string
+	// color to apply to spinner
+	spinnerColorCode string
 
 	// show rate of change in kB/sec or MB/sec
 	showBytes bool
@@ -287,6 +289,13 @@ func OptionEnableColorCodes(colorCodes bool) Option {
 func OptionSetCustomColorCodes(customColors map[string]string) Option {
 	return func(p *ProgressBar) {
 		p.config.customColors = customColors
+	}
+}
+
+// OptionSetSpinnerColorCode sets color code for spinner
+func OptionSetSpinnerColorCode(colorCode string) Option {
+	return func(p *ProgressBar) {
+		p.config.spinnerColorCode = colorCode
 	}
 }
 
@@ -1293,6 +1302,10 @@ func renderProgressBar(c config, s *state) (int, error) {
 			// if the spinner is changed according to the number render was called
 			spinner = selectedSpinner[s.spinnerIdx]
 			s.spinnerIdx = (s.spinnerIdx + 1) % len(selectedSpinner)
+		}
+		// if set add spinner color code
+		if c.spinnerColorCode != "" && c.colorCodes {
+			spinner = "[" + c.spinnerColorCode + "]" + spinner + "[reset]"
 		}
 		if c.elapsedTime {
 			if c.showDescriptionAtLineEnd {
