@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -1000,6 +1001,30 @@ func TestOptionFullWidth(t *testing.T) {
 	}
 }
 
+func TestFixedWidthBarFitsTerminal(t *testing.T) {
+	oldTermWidth := termWidth
+	termWidth = func(w io.Writer) (int, error) {
+		return 50, nil
+	}
+	defer func() {
+		termWidth = oldTermWidth
+	}()
+
+	buf := strings.Builder{}
+	bar := NewOptions(
+		100,
+		OptionSetWriter(&buf),
+		OptionSetDescription("really-long-file-name.bin "),
+		OptionSetWidth(20),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+	)
+	bar.Add(1)
+
+	assert.LessOrEqual(t, getStringWidth(bar.config, bar.String()), 50)
+	assert.NotContains(t, bar.String(), "|                    |")
+}
+
 func TestHumanizeBytesSI(t *testing.T) {
 	amount, suffix := humanizeBytes(float64(12.34)*1000*1000, false)
 	assert.Equal(t, "12 MB", fmt.Sprintf("%s%s", amount, suffix))
@@ -1142,18 +1167,45 @@ func TestOptionShowTotalTrueIndeterminate(t *testing.T) {
 	}
 }
 
+func freeTestHTTPAddr(t *testing.T) string {
+	t.Helper()
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen for free port: %v", err)
+	}
+	defer listener.Close()
+
+	return listener.Addr().String()
+}
+
+func getHTTPWithRetry(t *testing.T, url string) *http.Response {
+	t.Helper()
+
+	var lastErr error
+	deadline := time.Now().Add(time.Second)
+	for time.Now().Before(deadline) {
+		resp, err := http.Get(url)
+		if err == nil {
+			return resp
+		}
+		lastErr = err
+		time.Sleep(10 * time.Millisecond)
+	}
+
+	t.Fatalf("GET %s: %v", url, lastErr)
+	return nil
+}
+
 func TestStartHTTPServer(t *testing.T) {
 	bar := Default(10, "test")
 	bar.Add(1)
 
-	hostPort := "localhost:9696"
+	hostPort := freeTestHTTPAddr(t)
 	svr := bar.StartHTTPServer(hostPort)
 
 	// check plain text
-	resp, err := http.Get(fmt.Sprintf("http://%s/desc", hostPort))
-	if err != nil {
-		t.Error(err)
-	}
+	resp := getHTTPWithRetry(t, fmt.Sprintf("http://%s/desc", hostPort))
 	got, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Error(err)
@@ -1163,10 +1215,7 @@ func TestStartHTTPServer(t *testing.T) {
 	}
 
 	// check json
-	resp, err = http.Get(fmt.Sprintf("http://%s/state", hostPort))
-	if err != nil {
-		t.Error(err)
-	}
+	resp = getHTTPWithRetry(t, fmt.Sprintf("http://%s/state", hostPort))
 	got, err = io.ReadAll(resp.Body)
 	if err != nil {
 		t.Error(err)
