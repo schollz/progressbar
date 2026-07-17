@@ -55,10 +55,11 @@ type state struct {
 	counterLastTenRates []float64
 	spinnerIdx          int // the index of spinner
 
-	maxLineWidth int
-	currentBytes float64
-	finished     bool
-	exit         bool // Progress bar exit halfway
+	maxLineWidth  int
+	currentBytes  float64
+	startingBytes float64 // units already done before the bar started; excluded from the rate
+	finished      bool
+	exit          bool // Progress bar exit halfway
 
 	details []string // details to show,only used when detail row is set to more than 0
 
@@ -407,6 +408,19 @@ func OptionShowDescriptionAtLineEnd() Option {
 func OptionSetMaxDetailRow(row int) Option {
 	return func(p *ProgressBar) {
 		p.config.maxDetailRow = row
+	}
+}
+
+// OptionSetStartingBytes seeds the bar at an already-completed position, for
+// resuming a partial transfer. The percentage and ETA start from num, but those
+// bytes are excluded from the reported rate — analogous to Python tqdm's
+// initial=. Without this, the only way to reflect prior progress is Set(num),
+// which feeds the jump into the rolling-rate window and inflates the speed.
+func OptionSetStartingBytes(num int64) Option {
+	return func(p *ProgressBar) {
+		p.state.currentNum = num
+		p.state.currentBytes = float64(num)
+		p.state.startingBytes = float64(num)
 	}
 }
 
@@ -1035,7 +1049,7 @@ func (p *ProgressBar) State() State {
 	if p.state.currentNum > 0 {
 		s.SecondsLeft = s.SecondsSince / float64(p.state.currentNum) * (float64(p.config.max) - float64(p.state.currentNum))
 	}
-	s.KBsPerSecond = float64(p.state.currentBytes) / 1024.0 / s.SecondsSince
+	s.KBsPerSecond = (float64(p.state.currentBytes) - p.state.startingBytes) / 1024.0 / s.SecondsSince
 	s.Description = p.config.description
 	return s
 }
@@ -1199,7 +1213,7 @@ func renderProgressBar(c config, s *state) (int, error) {
 		// if no average samples, or if finished,
 		// then average rate should be the total rate
 		if t := time.Since(s.startTime).Seconds(); t > 0 {
-			averageRate = s.currentBytes / t
+			averageRate = (s.currentBytes - s.startingBytes) / t
 		} else {
 			averageRate = 0
 		}
