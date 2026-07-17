@@ -431,6 +431,29 @@ func TestState(t *testing.T) {
 	}
 }
 
+func TestStartingBytes(t *testing.T) {
+	bar := NewOptions64(100, OptionSetWidth(10), OptionSetStartingBytes(80))
+	s := bar.State()
+	if s.CurrentBytes != 80 {
+		t.Errorf("expected CurrentBytes 80, got %v", s.CurrentBytes)
+	}
+	if s.CurrentPercent != 0.8 {
+		t.Errorf("expected CurrentPercent 0.8, got %v", s.CurrentPercent)
+	}
+
+	// Transfer 10 more over ~0.2s: the rate must reflect only those 10 units,
+	// not the 80 seeded ones. Without the offset the fallback rate would be
+	// 90/0.2 = 450/s; with it, ~50/s.
+	bar = NewOptions64(100, OptionSetWidth(10), OptionSetStartingBytes(80), OptionSetWriter(io.Discard))
+	bar.Add(0) // start the clock at the seeded position
+	time.Sleep(200 * time.Millisecond)
+	bar.Add(10)
+	s = bar.State()
+	if rate := s.KBsPerSecond * 1024; rate > 200 {
+		t.Errorf("rate should exclude seeded bytes, got %v/s", rate)
+	}
+}
+
 func ExampleOptionSetRenderBlankState() {
 	NewOptions(10, OptionSetWidth(10), OptionSetRenderBlankState(true))
 	// Output:
