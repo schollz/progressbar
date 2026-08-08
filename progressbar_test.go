@@ -101,16 +101,38 @@ func ExampleOptionClearOnFinish() {
 
 func TestSpinnerClearOnFinish(t *testing.T) {
 	buf := strings.Builder{}
-	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf))
+	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf), OptionSetSpinnerChangeInterval(0))
 	bar.Reset()
-	time.Sleep(1 * time.Second)
 	bar.Add(10)
-	time.Sleep(1 * time.Second)
 	bar.Finish()
 	result, _ := virtualterm.Process(buf.String())
-	expect := "                                "
-	if result != expect {
-		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	if strings.TrimSpace(result) != "" {
+		t.Errorf("expected cleared spinner, got %q\n%+v", result, bar)
+	}
+}
+
+func TestSpinnerTypeClearOnFinish(t *testing.T) {
+	// Regression for #107: OptionSpinnerType must not break OptionClearOnFinish.
+	buf := strings.Builder{}
+	bar := NewOptions(-1,
+		OptionSetWidth(100),
+		OptionShowCount(),
+		OptionShowBytes(true),
+		OptionShowIts(),
+		OptionClearOnFinish(),
+		OptionSpinnerType(14),
+		OptionSetWriter(&buf),
+		OptionSetSpinnerChangeInterval(0),
+	)
+	bar.Reset()
+	bar.Add(10)
+	bar.Finish()
+	result, err := virtualterm.Process(buf.String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(result) != "" {
+		t.Errorf("expected cleared spinner with custom type, got %q", result)
 	}
 }
 

@@ -1455,16 +1455,17 @@ func clearProgressBar(c config, s state) error {
 		// write the "clear current line" ANSI escape sequence
 		return writeString(c, "\033[2K\r")
 	}
+	// On Windows, intermediate refreshes only need a carriage return to avoid
+	// flicker. When OptionClearOnFinish is set, the final clear must overwrite
+	// with spaces; otherwise the spinner/bar glyphs remain visible (see #107).
+	if runtime.GOOS == "windows" && !c.clearOnFinish {
+		return writeString(c, "\r")
+	}
 	// fill the empty content
 	// to overwrite the progress bar and jump
 	// back to the beginning of the line
-	if runtime.GOOS == "windows" {
-		return writeString(c, "\r")
-	}
 	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", s.maxLineWidth))
 	return writeString(c, str)
-	// the following does not show correctly if the previous line is longer than subsequent line
-	// return writeString(c, "\r")
 }
 
 func writeString(c config, str string) error {
