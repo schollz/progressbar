@@ -53,6 +53,7 @@ type state struct {
 	counterTime         time.Time
 	counterNumSinceLast int64
 	counterLastTenRates []float64
+	counterRateTimes    []time.Time
 	spinnerIdx          int // the index of spinner
 
 	maxLineWidth  int
@@ -107,6 +108,13 @@ type config struct {
 
 	// minimum time to wait in between updates
 	throttleDuration time.Duration
+
+	// rateAveragingWindow, when greater than zero, averages the rate (and thus
+	// the predicted time remaining) over the samples collected within this
+	// trailing time window instead of over the last few samples. A longer
+	// window yields a smoother, more stable estimate for long-running tasks
+	// whose rate fluctuates.
+	rateAveragingWindow time.Duration
 
 	// clear bar once finished
 	clearOnFinish bool
@@ -311,6 +319,19 @@ func OptionSetElapsedTime(elapsedTime bool) Option {
 func OptionSetPredictTime(predictTime bool) Option {
 	return func(p *ProgressBar) {
 		p.config.predictTime = predictTime
+	}
+}
+
+// OptionSetRateAveragingWindow sets the trailing time window used to average
+// the rate of progress. By default the bar averages over its last few samples,
+// which can make the reported rate and predicted time remaining jumpy for
+// long-running tasks. Passing a window (for example, time.Minute) averages
+// over every sample collected within that trailing window instead, producing a
+// steadier estimate. A window of zero (the default) keeps the original
+// behavior.
+func OptionSetRateAveragingWindow(window time.Duration) Option {
+	return func(p *ProgressBar) {
+		p.config.rateAveragingWindow = window
 	}
 }
 
@@ -737,11 +758,13 @@ func (p *ProgressBar) Add64(num int64) error {
 	// reset the countdown timer every second to take rolling average
 	p.state.counterNumSinceLast += num
 	if time.Since(p.state.counterTime).Seconds() > 0.5 {
-		p.state.counterLastTenRates = append(p.state.counterLastTenRates, float64(p.state.counterNumSinceLast)/time.Since(p.state.counterTime).Seconds())
-		if len(p.state.counterLastTenRates) > 10 {
-			p.state.counterLastTenRates = p.state.counterLastTenRates[1:]
-		}
-		p.state.counterTime = time.Now()
+		now := time.Now()
+		rate := float64(p.state.counterNumSinceLast) / time.Since(p.state.counterTime).Seconds()
+		p.state.counterLastTenRates = append(p.state.counterLastTenRates, rate)
+		p.state.counterRateTimes = append(p.state.counterRateTimes, now)
+		p.state.counterLastTenRates, p.state.counterRateTimes = trimRateSamples(
+			p.state.counterLastTenRates, p.state.counterRateTimes, p.config.rateAveragingWindow, now)
+		p.state.counterTime = now
 		p.state.counterNumSinceLast = 0
 	}
 
@@ -1529,6 +1552,31 @@ func (p *ProgressBar) Read(b []byte) (n int, err error) {
 func (p *ProgressBar) Close() (err error) {
 	err = p.Finish()
 	return
+}
+
+// maxLegacyRateSamples is the number of recent rate samples averaged when no
+// rate-averaging window is configured (see OptionSetRateAveragingWindow).
+const maxLegacyRateSamples = 10
+
+// trimRateSamples discards rate samples that fall outside the averaging window.
+// rates and times are parallel slices ordered oldest to newest, with times[i]
+// recording when rates[i] was collected. When window is greater than zero, only
+// samples collected within the trailing window relative to now are kept (the
+// most recent sample is always retained). Otherwise it keeps at most the last
+// maxLegacyRateSamples samples.
+func trimRateSamples(rates []float64, times []time.Time, window time.Duration, now time.Time) ([]float64, []time.Time) {
+	if window > 0 {
+		cutoff := now.Add(-window)
+		drop := 0
+		for drop < len(times)-1 && times[drop].Before(cutoff) {
+			drop++
+		}
+		return rates[drop:], times[drop:]
+	}
+	if len(rates) > maxLegacyRateSamples {
+		return rates[len(rates)-maxLegacyRateSamples:], times[len(times)-maxLegacyRateSamples:]
+	}
+	return rates, times
 }
 
 func average(xs []float64) float64 {

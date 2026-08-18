@@ -1267,3 +1267,77 @@ func TestStartHTTPServer(t *testing.T) {
 		t.Errorf("shutdown server failed: %v", err)
 	}
 }
+
+func TestTrimRateSamples(t *testing.T) {
+	base := time.Now()
+	times := []time.Time{
+		base.Add(-10 * time.Second),
+		base.Add(-5 * time.Second),
+		base.Add(-2 * time.Second),
+		base,
+	}
+	rates := []float64{1, 2, 3, 4}
+
+	clone := func() ([]float64, []time.Time) {
+		return append([]float64{}, rates...), append([]time.Time{}, times...)
+	}
+
+	// A 6s window keeps only the samples collected within the last 6 seconds.
+	r, tt := clone()
+	gotRates, gotTimes := trimRateSamples(r, tt, 6*time.Second, base)
+	if len(gotRates) != 3 || gotRates[0] != 2 {
+		t.Errorf("window trim: expected 3 samples starting at 2, got %v", gotRates)
+	}
+	if len(gotTimes) != len(gotRates) {
+		t.Errorf("window trim: rates/times length mismatch: %d vs %d", len(gotRates), len(gotTimes))
+	}
+
+	// A window shorter than the gap between samples keeps only the newest sample.
+	r, tt = clone()
+	gotRates, _ = trimRateSamples(r, tt, time.Nanosecond, base)
+	if len(gotRates) != 1 || gotRates[0] != 4 {
+		t.Errorf("tiny window: expected only the newest sample 4, got %v", gotRates)
+	}
+
+	// Without a window, at most maxLegacyRateSamples samples are kept.
+	manyRates := make([]float64, maxLegacyRateSamples+5)
+	manyTimes := make([]time.Time, maxLegacyRateSamples+5)
+	for i := range manyRates {
+		manyRates[i] = float64(i)
+		manyTimes[i] = base.Add(time.Duration(i) * time.Second)
+	}
+	gotRates, _ = trimRateSamples(manyRates, manyTimes, 0, base)
+	if len(gotRates) != maxLegacyRateSamples {
+		t.Errorf("legacy trim: expected %d samples, got %d", maxLegacyRateSamples, len(gotRates))
+	}
+	if gotRates[0] != 5 {
+		t.Errorf("legacy trim: expected to keep the newest samples, first kept = %v", gotRates[0])
+	}
+}
+
+func TestRateAveragingWindow(t *testing.T) {
+	forceSamples := func(bar *ProgressBar, n int) {
+		for i := 0; i < n; i++ {
+			// backdate the counter so each Add records a new rate sample
+			bar.state.counterTime = time.Now().Add(-time.Second)
+			if err := bar.Add(1); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+
+	// Without a window the number of retained rate samples is capped.
+	legacy := NewOptions(1000000, OptionSetWriter(io.Discard))
+	forceSamples(legacy, maxLegacyRateSamples+15)
+	if got := len(legacy.state.counterLastTenRates); got != maxLegacyRateSamples {
+		t.Errorf("legacy: expected %d retained rate samples, got %d", maxLegacyRateSamples, got)
+	}
+
+	// With a window covering the whole test, every sample is retained, so the
+	// count exceeds the legacy cap.
+	windowed := NewOptions(1000000, OptionSetWriter(io.Discard), OptionSetRateAveragingWindow(time.Hour))
+	forceSamples(windowed, maxLegacyRateSamples+15)
+	if got := len(windowed.state.counterLastTenRates); got <= maxLegacyRateSamples {
+		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
+	}
+}
