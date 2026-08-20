@@ -62,6 +62,12 @@ type state struct {
 	finished      bool
 	exit          bool // Progress bar exit halfway
 
+	// knownTermWidth is the terminal width observed on the most recent
+	// render that queried it (0 if never successfully queried). clear uses
+	// last cycle's value rather than querying termWidth itself, so a resize
+	// is picked up within one render without adding a new termWidth call.
+	knownTermWidth int
+
 	details []string // details to show,only used when detail row is set to more than 0
 
 	rendered string
@@ -1214,6 +1220,7 @@ func fitProgressBarWidth(c config, s *state, barStart, barEnd, stats, leftBrac, 
 	if err != nil || terminalWidth <= 0 {
 		return c.width
 	}
+	s.knownTermWidth = terminalWidth
 
 	bar := barStart + strings.Repeat(c.theme.SaucerPadding, c.width) + barEnd
 	lineWidth := getStringWidth(c, renderDeterminateProgressBar(c, s, bar, stats, leftBrac, rightBrac))
@@ -1336,6 +1343,8 @@ func renderProgressBar(c config, s *state) (int, error) {
 		width, err := termWidth(c.writer)
 		if err != nil {
 			width = 80
+		} else {
+			s.knownTermWidth = width
 		}
 
 		amend := 1 // an extra space at eol
@@ -1484,10 +1493,24 @@ func clearProgressBar(c config, s state) error {
 	if runtime.GOOS == "windows" {
 		return writeString(c, "\r")
 	}
-	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", s.maxLineWidth))
+	str := fmt.Sprintf("\r%s\r", strings.Repeat(" ", clampClearWidth(s.maxLineWidth, s.knownTermWidth)))
 	return writeString(c, str)
 	// the following does not show correctly if the previous line is longer than subsequent line
 	// return writeString(c, "\r")
+}
+
+// clampClearWidth returns maxLineWidth, capped down to knownTermWidth when
+// the terminal is narrower than the widest bar ever rendered. Padding the
+// clear string to the old (wider) maxLineWidth would overflow the current
+// line, so the terminal wraps it onto a new line instead of clearing in
+// place -- the bar then appears to restart on every render (#106).
+// knownTermWidth <= 0 (never successfully queried) or not narrower than
+// maxLineWidth leaves it unchanged.
+func clampClearWidth(maxLineWidth, knownTermWidth int) int {
+	if knownTermWidth > 0 && knownTermWidth < maxLineWidth {
+		return knownTermWidth
+	}
+	return maxLineWidth
 }
 
 func writeString(c config, str string) error {

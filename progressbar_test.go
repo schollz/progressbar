@@ -1048,6 +1048,29 @@ func TestFixedWidthBarFitsTerminal(t *testing.T) {
 	assert.NotContains(t, bar.String(), "|                    |")
 }
 
+// If the terminal has shrunk since the widest bar was rendered, padding the
+// clear string to that old (wider) maxLineWidth overflows the current line:
+// the terminal wraps it onto a new line instead of clearing in place, so the
+// bar appears to restart on every render (#106).
+func TestClampClearWidth(t *testing.T) {
+	tests := []struct {
+		name           string
+		maxLineWidth   int
+		knownTermWidth int
+		want           int
+	}{
+		{"terminal shrunk narrower than maxLineWidth", 80, 20, 20},
+		{"terminal still wider than maxLineWidth", 20, 80, 20},
+		{"terminal width never known falls back to maxLineWidth", 80, 0, 80},
+		{"terminal width exactly equal is left alone", 80, 80, 80},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, clampClearWidth(tt.maxLineWidth, tt.knownTermWidth))
+		})
+	}
+}
+
 func TestHumanizeBytesSI(t *testing.T) {
 	amount, suffix := humanizeBytes(float64(12.34)*1000*1000, false)
 	assert.Equal(t, "12 MB", fmt.Sprintf("%s%s", amount, suffix))
