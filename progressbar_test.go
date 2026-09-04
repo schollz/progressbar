@@ -420,6 +420,34 @@ func TestBar(t *testing.T) {
 	}
 }
 
+func TestAddExceedsMaxDoesNotCorruptState(t *testing.T) {
+	bar := NewOptions(100, OptionSetWriter(io.Discard))
+
+	if err := bar.Add(95); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if err := bar.Add(10); err == nil {
+		t.Error("should have an error for adding past max")
+	}
+
+	// A rejected Add must leave state untouched, not partially applied.
+	if bar.state.currentNum != 95 {
+		t.Errorf("expected currentNum to stay at 95 after a rejected Add, got %d", bar.state.currentNum)
+	}
+	if bar.state.currentPercent != 95 {
+		t.Errorf("expected currentPercent to stay at 95 after a rejected Add, got %d", bar.state.currentPercent)
+	}
+
+	// The bar must still accept further, non-overshooting progress afterwards.
+	if err := bar.Add(5); err != nil {
+		t.Errorf("bar should still accept progress after a rejected Add, got error: %v", err)
+	}
+	if bar.state.currentNum != 100 {
+		t.Errorf("expected currentNum to reach 100, got %d", bar.state.currentNum)
+	}
+}
+
 func TestState(t *testing.T) {
 	bar := NewOptions(100, OptionSetWidth(10))
 	bar.Reset()

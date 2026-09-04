@@ -741,6 +741,10 @@ func (p *ProgressBar) Add64(num int64) error {
 		return errors.New("max must be greater than 0")
 	}
 
+	if !p.config.ignoreLength && p.state.currentNum+num > p.config.max {
+		return errors.New("current number exceeds max")
+	}
+
 	if p.state.currentNum < p.config.max {
 		if p.config.ignoreLength {
 			p.state.currentNum = (p.state.currentNum + num) % p.config.max
@@ -774,9 +778,6 @@ func (p *ProgressBar) Add64(num int64) error {
 	updateBar := p.state.currentPercent != p.state.lastPercent && p.state.currentPercent > 0
 
 	p.state.lastPercent = p.state.currentPercent
-	if p.state.currentNum > p.config.max {
-		return errors.New("current number exceeds max")
-	}
 
 	// always update if show bytes/second or its/second
 	if updateBar || p.config.showIterationsPerSecond || p.config.showIterationsCount {
