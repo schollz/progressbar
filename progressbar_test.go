@@ -431,6 +431,41 @@ func TestState(t *testing.T) {
 	}
 }
 
+func TestStateBeforeStart(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		max      int64
+		starting int64
+	}{
+		{name: "known length", max: 100},
+		{name: "unknown length", max: -1},
+		{name: "resumed transfer", max: 100, starting: 80},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bar := NewOptions64(tc.max, OptionSetStartingBytes(tc.starting),
+				OptionSetSpinnerChangeInterval(0), OptionSetWriter(io.Discard))
+			s := bar.State()
+			if s.KBsPerSecond != 0 || s.SecondsSince != 0 {
+				t.Errorf("unstarted bar should have zero rate and elapsed time: %+v", s)
+			}
+			if _, err := json.Marshal(s); err != nil {
+				t.Errorf("state should be JSON encodable: %v", err)
+			}
+			if bar.IsStarted() {
+				t.Error("reading state should not start the bar")
+			}
+
+			bar.StartWithoutRender()
+			if err := bar.Add(10); err != nil {
+				t.Fatal(err)
+			}
+			if s := bar.State(); !(s.KBsPerSecond > 0) {
+				t.Errorf("started bar should report its transfer rate: %+v", s)
+			}
+		})
+	}
+}
+
 func TestStartingBytes(t *testing.T) {
 	bar := NewOptions64(100, OptionSetWidth(10), OptionSetStartingBytes(80))
 	s := bar.State()
@@ -1218,6 +1253,23 @@ func getHTTPWithRetry(t *testing.T, url string) *http.Response {
 
 	t.Fatalf("GET %s: %v", url, lastErr)
 	return nil
+}
+
+func TestStartHTTPServerBeforeStart(t *testing.T) {
+	bar := NewOptions(100, OptionSetWriter(io.Discard))
+	hostPort := freeTestHTTPAddr(t)
+	server := bar.StartHTTPServer(hostPort)
+	t.Cleanup(func() { _ = server.Close() })
+
+	resp := getHTTPWithRetry(t, fmt.Sprintf("http://%s/state", hostPort))
+	defer resp.Body.Close()
+	var result State
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		t.Fatalf("decode initial state: %v", err)
+	}
+	if result.Max != 100 || result.CurrentNum != 0 || result.KBsPerSecond != 0 {
+		t.Errorf("unexpected initial state: %+v", result)
+	}
 }
 
 func TestStartHTTPServer(t *testing.T) {

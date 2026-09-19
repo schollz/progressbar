@@ -1072,7 +1072,9 @@ func (p *ProgressBar) State() State {
 	if p.state.currentNum > 0 {
 		s.SecondsLeft = s.SecondsSince / float64(p.state.currentNum) * (float64(p.config.max) - float64(p.state.currentNum))
 	}
-	s.KBsPerSecond = (float64(p.state.currentBytes) - p.state.startingBytes) / 1024.0 / s.SecondsSince
+	if s.SecondsSince > 0 {
+		s.KBsPerSecond = (float64(p.state.currentBytes) - p.state.startingBytes) / 1024.0 / s.SecondsSince
+	}
 	s.Description = p.config.description
 	return s
 }
