@@ -1393,3 +1393,26 @@ func TestRateAveragingWindow(t *testing.T) {
 		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
 	}
 }
+
+func TestInvisibleWithAddDetail(t *testing.T) {
+	buf := new(bytes.Buffer)
+	bar := NewOptions(100,
+		OptionSetDescription("Test"),
+		OptionSetWriter(buf),
+		OptionSetVisibility(false),
+		OptionSetMaxDetailRow(2),
+	)
+
+	for i := 0; i < 50; i++ {
+		_ = bar.Add(1)
+	}
+	if buf.Len() > 0 {
+		t.Fatalf("expected buffer to be empty before AddDetail, got %q", buf.String())
+	}
+
+	_ = bar.AddDetail("detail message")
+
+	if buf.Len() > 0 {
+		t.Fatalf("expected buffer to be empty after AddDetail when invisible, got %q", buf.String())
+	}
+}

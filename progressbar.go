@@ -971,6 +971,9 @@ func (p *ProgressBar) IsStarted() bool {
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
 func (p *ProgressBar) render() error {
+	if p.config.invisible {
+		return nil
+	}
 	// make sure that the rendering is not happening too quickly
 	// but always show if the currentNum reaches the max
 	if !p.IsStarted() {
