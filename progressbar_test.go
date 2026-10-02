@@ -1393,3 +1393,36 @@ func TestRateAveragingWindow(t *testing.T) {
 		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
 	}
 }
+
+func TestPredictTimeZeroRate(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100,
+		OptionSetWidth(10),
+		OptionSetWriter(&buf),
+		OptionSetPredictTime(true),
+	)
+	// Force rate to zero explicitly to verify that division by zero is guarded
+	bar.state.counterLastTenRates = []float64{0}
+	bar.state.startTime = time.Now().Add(-10 * time.Second)
+	_, err := renderProgressBar(bar.config, &bar.state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := strings.TrimSpace(buf.String())
+	expect := "0% |          |  [10s:0s]"
+	if result != expect {
+		t.Errorf("Render mismatch\nResult: '%s'\nExpect: '%s'", result, expect)
+	}
+
+	// Also verify negative rate does not produce invalid ETA
+	buf.Reset()
+	bar.state.counterLastTenRates = []float64{-5}
+	_, err = renderProgressBar(bar.config, &bar.state)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result = strings.TrimSpace(buf.String())
+	if result != expect {
+		t.Errorf("Render mismatch\nResult: '%s'\nExpect: '%s'", result, expect)
+	}
+}

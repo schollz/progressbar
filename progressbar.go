@@ -1324,7 +1324,10 @@ func renderProgressBar(c config, s *state) (int, error) {
 	// show time prediction in "current/total" seconds format
 	switch {
 	case c.predictTime:
-		rightBracNum := (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second)
+		var rightBracNum time.Duration
+		if averageRate > 0 {
+			rightBracNum = (time.Duration((1/averageRate)*(float64(c.max)-float64(s.currentNum))) * time.Second)
+		}
 		if rightBracNum.Seconds() < 0 {
 			rightBracNum = 0 * time.Second
 		}
