@@ -153,6 +153,9 @@ type config struct {
 	// specifies how many rows of details to show,default value is 0 and no details will be shown
 	maxDetailRow int
 
+	// separator to format numbers (e.g. "1,048,576" or "1_048_576")
+	numberSeparator string
+
 	stdBuffer bytes.Buffer
 }
 
@@ -443,6 +446,23 @@ func OptionSetStartingBytes(num int64) Option {
 		p.state.currentBytes = float64(num)
 		p.state.startingBytes = float64(num)
 	}
+}
+
+// OptionSetNumberSeparator sets the separator used when formatting numbers (e.g. "," or "_").
+func OptionSetNumberSeparator(separator string) Option {
+	return func(p *ProgressBar) {
+		p.config.numberSeparator = separator
+	}
+}
+
+// OptionSetSeparator is an alias for OptionSetNumberSeparator.
+func OptionSetSeparator(separator string) Option {
+	return OptionSetNumberSeparator(separator)
+}
+
+// OptionSeparator is an alias for OptionSetNumberSeparator.
+func OptionSeparator(separator string) Option {
+	return OptionSetNumberSeparator(separator)
 }
 
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
@@ -1269,18 +1289,18 @@ func renderProgressBar(c config, s *state) (int, error) {
 					sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 				}
 			} else if c.showTotalBytes {
-				sb.WriteString(fmt.Sprintf("%.0f/%d", s.currentBytes, c.max))
+				sb.WriteString(fmt.Sprintf("%s/%s", formatNumber(s.currentBytes, c.numberSeparator), formatNumber(float64(c.max), c.numberSeparator)))
 			} else {
-				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				sb.WriteString(formatNumber(s.currentBytes, c.numberSeparator))
 			}
 		} else {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 			} else if c.showTotalBytes {
-				sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
+				sb.WriteString(fmt.Sprintf("%s/%s", formatNumber(s.currentBytes, c.numberSeparator), "-"))
 			} else {
-				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				sb.WriteString(formatNumber(s.currentBytes, c.numberSeparator))
 			}
 		}
 	}
@@ -1304,11 +1324,11 @@ func renderProgressBar(c config, s *state) (int, error) {
 			sb.WriteString(", ")
 		}
 		if averageRate > 1 {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString))
+			sb.WriteString(fmt.Sprintf("%s %s/s", formatNumber(averageRate, c.numberSeparator), c.iterationString))
 		} else if averageRate*60 > 1 {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString))
+			sb.WriteString(fmt.Sprintf("%s %s/min", formatNumber(60*averageRate, c.numberSeparator), c.iterationString))
 		} else {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString))
+			sb.WriteString(fmt.Sprintf("%s %s/hr", formatNumber(3600*averageRate, c.numberSeparator), c.iterationString))
 		}
 	}
 	if sb.Len() > 0 {
@@ -1652,4 +1672,50 @@ func Bprintf(pb *ProgressBar, format string, a ...interface{}) (int, error) {
 	} else {
 		return fmt.Fprintf(&pb.config.stdBuffer, format, a...)
 	}
+}
+
+func formatNumber(val float64, sep string) string {
+	s := fmt.Sprintf("%.0f", val)
+	return insertSeparator(s, sep)
+}
+
+func insertSeparator(s string, sep string) string {
+	if sep == "" || len(s) <= 3 {
+		return s
+	}
+
+	isNeg := false
+	if s[0] == '-' {
+		isNeg = true
+		s = s[1:]
+	}
+
+	if len(s) <= 3 {
+		if isNeg {
+			return "-" + s
+		}
+		return s
+	}
+
+	var b strings.Builder
+	if isNeg {
+		b.WriteByte('-')
+	}
+
+	rem := len(s) % 3
+	if rem > 0 {
+		b.WriteString(s[:rem])
+		if rem < len(s) {
+			b.WriteString(sep)
+		}
+	}
+
+	for i := rem; i < len(s); i += 3 {
+		b.WriteString(s[i : i+3])
+		if i+3 < len(s) {
+			b.WriteString(sep)
+		}
+	}
+
+	return b.String()
 }

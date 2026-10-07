@@ -1393,3 +1393,76 @@ func TestRateAveragingWindow(t *testing.T) {
 		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
 	}
 }
+
+func TestFormatNumber(t *testing.T) {
+	tests := []struct {
+		val      float64
+		sep      string
+		expected string
+	}{
+		{val: 0, sep: "_", expected: "0"},
+		{val: 9, sep: "_", expected: "9"},
+		{val: 99, sep: "_", expected: "99"},
+		{val: 999, sep: "_", expected: "999"},
+		{val: 1000, sep: "_", expected: "1_000"},
+		{val: 10000, sep: ",", expected: "10,000"},
+		{val: 100000, sep: ",", expected: "100,000"},
+		{val: 1048576, sep: "_", expected: "1_048_576"},
+		{val: 1048576, sep: ",", expected: "1,048,576"},
+		{val: 1048576, sep: " ", expected: "1 048 576"},
+		{val: 1048576, sep: "", expected: "1048576"},
+		{val: 1000000000, sep: ",", expected: "1,000,000,000"},
+		{val: -1234, sep: ",", expected: "-1,234"},
+		{val: -1048576, sep: "_", expected: "-1_048_576"},
+	}
+
+	for _, tt := range tests {
+		actual := formatNumber(tt.val, tt.sep)
+		assert.Equal(t, tt.expected, actual, "val=%v sep=%q", tt.val, tt.sep)
+	}
+}
+
+func TestOptionSetNumberSeparator(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(1048576,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+		OptionSetNumberSeparator("_"),
+		OptionSetWriter(&buf),
+	)
+	_ = bar.Add(1024)
+	assert.Contains(t, buf.String(), "1_024/1_048_576")
+
+	// test OptionSetSeparator alias
+	buf.Reset()
+	bar = NewOptions(1000000,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+		OptionSetSeparator(","),
+		OptionSetWriter(&buf),
+	)
+	_ = bar.Add(5000)
+	assert.Contains(t, buf.String(), "5,000/1,000,000")
+
+	// test OptionSeparator alias
+	buf.Reset()
+	bar = NewOptions(1000000,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+		OptionSeparator(" "),
+		OptionSetWriter(&buf),
+	)
+	_ = bar.Add(5000)
+	assert.Contains(t, buf.String(), "5 000/1 000 000")
+}
+
+func ExampleOptionSetNumberSeparator() {
+	bar := NewOptions(1048576, OptionSetWidth(10), OptionShowCount(), OptionSetPredictTime(false), OptionSetNumberSeparator("_"))
+	bar.Add(1024)
+	// Output:
+	// 0% |          | (1_024/1_048_576)
+}
+
