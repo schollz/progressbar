@@ -1393,3 +1393,74 @@ func TestRateAveragingWindow(t *testing.T) {
 		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
 	}
 }
+
+func TestProgressBar_AddDetail(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100,
+		OptionSetDescription("Test"),
+		OptionSetMaxDetailRow(2),
+		OptionSetWriter(&buf),
+	)
+
+	err := bar.AddDetail("detail 1")
+	assert.NoError(t, err)
+	assert.Contains(t, buf.String(), "detail 1")
+}
+
+func TestProgressBar_AddDetailInvisible(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100,
+		OptionSetDescription("Test"),
+		OptionSetVisibility(false),
+		OptionSetMaxDetailRow(2),
+		OptionSetWriter(&buf),
+	)
+
+	err := bar.AddDetail("detail message 1")
+	assert.NoError(t, err)
+
+	for i := 0; i < 50; i++ {
+		_ = bar.Add(1)
+	}
+
+	err = bar.AddDetail("detail message 2")
+	assert.NoError(t, err)
+
+	for i := 0; i < 50; i++ {
+		_ = bar.Add(1)
+	}
+
+	assert.Empty(t, buf.String())
+}
+
+func TestProgressBar_AddDetailEdgeCases(t *testing.T) {
+	t.Run("maxDetailRow zero", func(t *testing.T) {
+		bar := NewOptions(10, OptionSetMaxDetailRow(0), OptionSetWriter(io.Discard))
+		err := bar.AddDetail("detail")
+		assert.Error(t, err)
+		assert.Equal(t, "maxDetailRow is set to 0, cannot add detail", err.Error())
+	})
+
+	t.Run("finished progress bar", func(t *testing.T) {
+		bar := NewOptions(10, OptionSetMaxDetailRow(2), OptionSetWriter(io.Discard))
+		_ = bar.Finish()
+		err := bar.AddDetail("detail")
+		assert.Error(t, err)
+		assert.Equal(t, "cannot add detail to a finished progress bar", err.Error())
+	})
+
+	t.Run("more details than maxDetailRow invisible", func(t *testing.T) {
+		buf := strings.Builder{}
+		bar := NewOptions(10,
+			OptionSetVisibility(false),
+			OptionSetMaxDetailRow(2),
+			OptionSetWriter(&buf),
+		)
+		assert.NoError(t, bar.AddDetail("d1"))
+		assert.NoError(t, bar.AddDetail("d2"))
+		assert.NoError(t, bar.AddDetail("d3"))
+		assert.Empty(t, buf.String())
+		assert.Equal(t, []string{"d2", "d3"}, bar.state.details)
+	})
+}
+

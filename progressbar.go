@@ -800,8 +800,10 @@ func (p *ProgressBar) AddDetail(detail string) error {
 	if p.state.details == nil {
 		// if we add a detail before the first add, it will be weird that we have detail but don't have the progress bar in the top.
 		// so when we add the first detail, we will render the progress bar first.
-		if err := p.render(); err != nil {
-			return err
+		if !p.config.invisible {
+			if err := p.render(); err != nil {
+				return err
+			}
 		}
 	}
 	p.state.details = append(p.state.details, detail)
@@ -971,6 +973,9 @@ func (p *ProgressBar) IsStarted() bool {
 // rendered line width. this function is not thread-safe,
 // so it must be called with an acquired lock.
 func (p *ProgressBar) render() error {
+	if p.config.invisible {
+		return nil
+	}
 	// make sure that the rendering is not happening too quickly
 	// but always show if the currentNum reaches the max
 	if !p.IsStarted() {
