@@ -1393,3 +1393,105 @@ func TestRateAveragingWindow(t *testing.T) {
 		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
 	}
 }
+
+func TestFormatNumberString(t *testing.T) {
+	tests := []struct {
+		input     string
+		separator string
+		expected  string
+	}{
+		{"", ",", ""},
+		{"1048576", "", "1048576"},
+		{"0", ",", "0"},
+		{"5", ",", "5"},
+		{"42", ",", "42"},
+		{"999", ",", "999"},
+		{"1000", ",", "1,000"},
+		{"1000", "_", "1_000"},
+		{"12345", ",", "12,345"},
+		{"123456", ",", "123,456"},
+		{"1048576", ",", "1,048,576"},
+		{"1048576", "_", "1_048_576"},
+		{"1048576", ".", "1.048.576"},
+		{"1048576", " ", "1 048 576"},
+		{"-1048576", ",", "-1,048,576"},
+		{"+1048576", ",", "+1,048,576"},
+		{"1048576.50", ",", "1,048,576.50"},
+		{"9223372036854775807", ",", "9,223,372,036,854,775,807"},
+	}
+
+	for _, tc := range tests {
+		actual := formatNumberString(tc.input, tc.separator)
+		if actual != tc.expected {
+			t.Errorf("formatNumberString(%q, %q) = %q; expected %q", tc.input, tc.separator, actual, tc.expected)
+		}
+	}
+}
+
+func TestProgressBar_UseSeparator(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(1048576,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+		OptionUseSeparator("_"),
+		OptionSetWriter(&buf),
+	)
+	bar.Add(1024)
+	rendered := buf.String()
+	if !strings.Contains(rendered, "1_024/1_048_576") {
+		t.Fatalf("expected rendered bar to contain '1_024/1_048_576', got: %q", rendered)
+	}
+
+	// Test OptionSeparator alias with comma
+	buf.Reset()
+	barComma := NewOptions(1048576,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+		OptionSeparator(","),
+		OptionSetWriter(&buf),
+	)
+	barComma.Add(1024)
+	renderedComma := buf.String()
+	if !strings.Contains(renderedComma, "1,024/1,048,576") {
+		t.Fatalf("expected rendered bar to contain '1,024/1,048,576', got: %q", renderedComma)
+	}
+
+	// Test OptionSetSeparator alias with space
+	buf.Reset()
+	barSpace := NewOptions(1048576,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionSetPredictTime(false),
+		OptionSetSeparator(" "),
+		OptionSetWriter(&buf),
+	)
+	barSpace.Add(1024)
+	renderedSpace := buf.String()
+	if !strings.Contains(renderedSpace, "1 024/1 048 576") {
+		t.Fatalf("expected rendered bar to contain '1 024/1 048 576', got: %q", renderedSpace)
+	}
+}
+
+func TestProgressBar_UseSeparatorIgnoreLength(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionShowCount(),
+		OptionUseSeparator(","),
+		OptionSetWriter(&buf),
+	)
+	bar.Add(50000)
+	rendered := buf.String()
+	if !strings.Contains(rendered, "50,000/-") {
+		t.Fatalf("expected rendered bar to contain '50,000/-', got: %q", rendered)
+	}
+}
+
+func ExampleOptionUseSeparator() {
+	bar := NewOptions(1048576, OptionSetWidth(10), OptionShowCount(), OptionSetPredictTime(false), OptionUseSeparator("_"))
+	bar.Add(1024)
+	// Output:
+	//    0% |          | (1_024/1_048_576)
+}

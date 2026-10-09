@@ -154,6 +154,9 @@ type config struct {
 	maxDetailRow int
 
 	stdBuffer bytes.Buffer
+
+	// separator to format numbers with (e.g. "," or "_")
+	useSeparator string
 }
 
 // Theme defines the elements of the bar
@@ -443,6 +446,23 @@ func OptionSetStartingBytes(num int64) Option {
 		p.state.currentBytes = float64(num)
 		p.state.startingBytes = float64(num)
 	}
+}
+
+// OptionUseSeparator sets the separator used to format numbers (e.g. "," or "_").
+func OptionUseSeparator(separator string) Option {
+	return func(p *ProgressBar) {
+		p.config.useSeparator = separator
+	}
+}
+
+// OptionSetSeparator is an alias for OptionUseSeparator.
+func OptionSetSeparator(separator string) Option {
+	return OptionUseSeparator(separator)
+}
+
+// OptionSeparator is an alias for OptionUseSeparator.
+func OptionSeparator(separator string) Option {
+	return OptionUseSeparator(separator)
 }
 
 // NewOptions constructs a new instance of ProgressBar, with any options you specify
@@ -1269,18 +1289,34 @@ func renderProgressBar(c config, s *state) (int, error) {
 					sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 				}
 			} else if c.showTotalBytes {
-				sb.WriteString(fmt.Sprintf("%.0f/%d", s.currentBytes, c.max))
+				if c.useSeparator != "" {
+					sb.WriteString(fmt.Sprintf("%s/%s", formatNumberString(fmt.Sprintf("%.0f", s.currentBytes), c.useSeparator), formatNumberString(fmt.Sprintf("%d", c.max), c.useSeparator)))
+				} else {
+					sb.WriteString(fmt.Sprintf("%.0f/%d", s.currentBytes, c.max))
+				}
 			} else {
-				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				if c.useSeparator != "" {
+					sb.WriteString(formatNumberString(fmt.Sprintf("%.0f", s.currentBytes), c.useSeparator))
+				} else {
+					sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				}
 			}
 		} else {
 			if c.showBytes {
 				currentHumanize, currentSuffix := humanizeBytes(s.currentBytes, c.useIECUnits)
 				sb.WriteString(fmt.Sprintf("%s%s", currentHumanize, currentSuffix))
 			} else if c.showTotalBytes {
-				sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
+				if c.useSeparator != "" {
+					sb.WriteString(fmt.Sprintf("%s/%s", formatNumberString(fmt.Sprintf("%.0f", s.currentBytes), c.useSeparator), "-"))
+				} else {
+					sb.WriteString(fmt.Sprintf("%.0f/%s", s.currentBytes, "-"))
+				}
 			} else {
-				sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				if c.useSeparator != "" {
+					sb.WriteString(formatNumberString(fmt.Sprintf("%.0f", s.currentBytes), c.useSeparator))
+				} else {
+					sb.WriteString(fmt.Sprintf("%.0f", s.currentBytes))
+				}
 			}
 		}
 	}
@@ -1303,12 +1339,22 @@ func renderProgressBar(c config, s *state) (int, error) {
 		} else {
 			sb.WriteString(", ")
 		}
-		if averageRate > 1 {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString))
-		} else if averageRate*60 > 1 {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString))
+		if c.useSeparator != "" {
+			if averageRate > 1 {
+				sb.WriteString(fmt.Sprintf("%s %s/s", formatNumberString(fmt.Sprintf("%0.0f", averageRate), c.useSeparator), c.iterationString))
+			} else if averageRate*60 > 1 {
+				sb.WriteString(fmt.Sprintf("%s %s/min", formatNumberString(fmt.Sprintf("%0.0f", 60*averageRate), c.useSeparator), c.iterationString))
+			} else {
+				sb.WriteString(fmt.Sprintf("%s %s/hr", formatNumberString(fmt.Sprintf("%0.0f", 3600*averageRate), c.useSeparator), c.iterationString))
+			}
 		} else {
-			sb.WriteString(fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString))
+			if averageRate > 1 {
+				sb.WriteString(fmt.Sprintf("%0.0f %s/s", averageRate, c.iterationString))
+			} else if averageRate*60 > 1 {
+				sb.WriteString(fmt.Sprintf("%0.0f %s/min", 60*averageRate, c.iterationString))
+			} else {
+				sb.WriteString(fmt.Sprintf("%0.0f %s/hr", 3600*averageRate, c.iterationString))
+			}
 		}
 	}
 	if sb.Len() > 0 {
@@ -1652,4 +1698,51 @@ func Bprintf(pb *ProgressBar, format string, a ...interface{}) (int, error) {
 	} else {
 		return fmt.Fprintf(&pb.config.stdBuffer, format, a...)
 	}
+}
+
+func formatNumberString(s string, separator string) string {
+	if separator == "" || len(s) == 0 {
+		return s
+	}
+
+	sign := ""
+	if strings.HasPrefix(s, "-") {
+		sign = "-"
+		s = s[1:]
+	} else if strings.HasPrefix(s, "+") {
+		sign = "+"
+		s = s[1:]
+	}
+
+	parts := strings.SplitN(s, ".", 2)
+	intPart := parts[0]
+
+	if len(intPart) <= 3 {
+		return sign + s
+	}
+
+	var result strings.Builder
+	result.WriteString(sign)
+
+	rem := len(intPart) % 3
+	if rem > 0 {
+		result.WriteString(intPart[:rem])
+		if len(intPart) > rem {
+			result.WriteString(separator)
+		}
+	}
+
+	for i := rem; i < len(intPart); i += 3 {
+		result.WriteString(intPart[i : i+3])
+		if i+3 < len(intPart) {
+			result.WriteString(separator)
+		}
+	}
+
+	if len(parts) > 1 {
+		result.WriteString(".")
+		result.WriteString(parts[1])
+	}
+
+	return result.String()
 }
