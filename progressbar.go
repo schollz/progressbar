@@ -797,7 +797,7 @@ func (p *ProgressBar) AddDetail(detail string) error {
 
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if p.state.details == nil {
+	if p.state.details == nil && !p.config.invisible {
 		// if we add a detail before the first add, it will be weird that we have detail but don't have the progress bar in the top.
 		// so when we add the first detail, we will render the progress bar first.
 		if err := p.render(); err != nil {

@@ -1393,3 +1393,27 @@ func TestRateAveragingWindow(t *testing.T) {
 		t.Errorf("windowed: expected more than %d retained samples, got %d", maxLegacyRateSamples, got)
 	}
 }
+
+func TestAddDetailInvisible(t *testing.T) {
+	buf := strings.Builder{}
+	bar := NewOptions(100,
+		OptionSetWidth(10),
+		OptionSetVisibility(false),
+		OptionSetMaxDetailRow(2),
+		OptionSetWriter(&buf),
+	)
+
+	if err := bar.Add(10); err != nil {
+		t.Fatal(err)
+	}
+	if err := bar.AddDetail("first"); err != nil {
+		t.Fatal(err)
+	}
+	if err := bar.Finish(); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := buf.String(); got != "" {
+		t.Errorf("expected no output when invisible, got %q", got)
+	}
+}
