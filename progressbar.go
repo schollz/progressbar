@@ -876,19 +876,20 @@ func New64(max int64) *ProgressBar {
 	return NewOptions64(max)
 }
 
-// GetMax returns the max of a bar
+// GetMax returns the max of a bar, or -1 if the length is unknown
 func (p *ProgressBar) GetMax() int {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	return int(p.config.max)
+	return int(p.GetMax64())
 }
 
-// GetMax64 returns the current max
+// GetMax64 returns the current max, or -1 if the length is unknown
 func (p *ProgressBar) GetMax64() int64 {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
+	// For an unknown length, config.max holds the spinner width, not a max.
+	if p.config.ignoreLength {
+		return -1
+	}
 	return p.config.max
 }
 

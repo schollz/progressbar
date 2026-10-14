@@ -431,6 +431,29 @@ func TestState(t *testing.T) {
 	}
 }
 
+func TestGetMaxUnknownLength(t *testing.T) {
+	bar := NewOptions(-1, OptionSetWriter(io.Discard), OptionSetSpinnerChangeInterval(0))
+	if got := bar.GetMax(); got != -1 {
+		t.Errorf("GetMax() = %d, want -1", got)
+	}
+	if got := bar.GetMax64(); got != -1 {
+		t.Errorf("GetMax64() = %d, want -1", got)
+	}
+	if got := bar.State().Max; got != -1 {
+		t.Errorf("State().Max = %d, want -1", got)
+	}
+
+	bar = NewOptions(100, OptionSetWriter(io.Discard), OptionSetSpinnerChangeInterval(0))
+	bar.ChangeMax(-1)
+	if got := bar.GetMax64(); got != -1 {
+		t.Errorf("after ChangeMax(-1), GetMax64() = %d, want -1", got)
+	}
+	bar.ChangeMax(50)
+	if got := bar.GetMax64(); got != 50 {
+		t.Errorf("after ChangeMax(50), GetMax64() = %d, want 50", got)
+	}
+}
+
 func TestStateBeforeStart(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
