@@ -100,17 +100,37 @@ func ExampleOptionClearOnFinish() {
 }
 
 func TestSpinnerClearOnFinish(t *testing.T) {
-	buf := strings.Builder{}
-	bar := NewOptions(-1, OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true), OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf))
-	bar.Reset()
-	time.Sleep(1 * time.Second)
-	bar.Add(10)
-	time.Sleep(1 * time.Second)
-	bar.Finish()
-	result, _ := virtualterm.Process(buf.String())
-	expect := "                                "
-	if result != expect {
-		t.Errorf("Render miss-match\nResult: '%s'\nExpect: '%s'\n%+v", result, expect, bar)
+	for _, tc := range []struct {
+		name    string
+		spinner Option
+	}{
+		{name: "default"},
+		{name: "type", spinner: OptionSpinnerType(7)},
+		{name: "custom", spinner: OptionSpinnerCustom([]string{"*", "+"})},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf strings.Builder
+			options := []Option{
+				OptionSetWidth(100), OptionShowCount(), OptionShowBytes(true),
+				OptionShowIts(), OptionClearOnFinish(), OptionSetWriter(&buf),
+				OptionSetSpinnerChangeInterval(0),
+			}
+			if tc.spinner != nil {
+				options = append(options, tc.spinner)
+			}
+			bar := NewOptions(-1, options...)
+			bar.Reset()
+			if err := bar.Add(10); err != nil {
+				t.Fatal(err)
+			}
+			if err := bar.Finish(); err != nil {
+				t.Fatal(err)
+			}
+			result, _ := virtualterm.Process(buf.String())
+			if strings.TrimSpace(result) != "" {
+				t.Errorf("spinner was not cleared: %q", result)
+			}
+		})
 	}
 }
 
