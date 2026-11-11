@@ -456,6 +456,7 @@ func TestStateBeforeStart(t *testing.T) {
 			}
 
 			bar.StartWithoutRender()
+			time.Sleep(20 * time.Millisecond)
 			if err := bar.Add(10); err != nil {
 				t.Fatal(err)
 			}
@@ -486,6 +487,53 @@ func TestStartingBytes(t *testing.T) {
 	s = bar.State()
 	if rate := s.KBsPerSecond * 1024; rate > 200 {
 		t.Errorf("rate should exclude seeded bytes, got %v/s", rate)
+	}
+}
+
+func TestStateIndeterminate(t *testing.T) {
+	bar := NewOptions(-1, OptionSetWidth(10), OptionSetWriter(io.Discard))
+	bar.StartWithoutRender()
+	time.Sleep(20 * time.Millisecond)
+	if err := bar.Add(50); err != nil {
+		t.Fatal(err)
+	}
+	s := bar.State()
+	if s.Max != -1 {
+		t.Errorf("expected Max -1, got %d", s.Max)
+	}
+	if s.CurrentPercent != 0 {
+		t.Errorf("expected CurrentPercent 0 for indeterminate bar, got %f", s.CurrentPercent)
+	}
+	if s.SecondsLeft != 0 {
+		t.Errorf("expected SecondsLeft 0 for indeterminate bar, got %f", s.SecondsLeft)
+	}
+	if _, err := json.Marshal(s); err != nil {
+		t.Errorf("state should be JSON encodable: %v", err)
+	}
+}
+
+func TestStateZeroMax(t *testing.T) {
+	bar := NewOptions(0, OptionSetWriter(io.Discard))
+	s := bar.State()
+	if s.CurrentPercent != 0 {
+		t.Errorf("expected CurrentPercent 0 for max=0, got %f", s.CurrentPercent)
+	}
+	if s.SecondsLeft != 0 {
+		t.Errorf("expected SecondsLeft 0 for max=0, got %f", s.SecondsLeft)
+	}
+	if _, err := json.Marshal(s); err != nil {
+		t.Errorf("state should be JSON encodable: %v", err)
+	}
+}
+
+func TestStateOvershootClamp(t *testing.T) {
+	bar := NewOptions(10, OptionSetWriter(io.Discard))
+	bar.StartWithoutRender()
+	time.Sleep(20 * time.Millisecond)
+	bar.state.currentNum = 15 // simulate overshoot
+	s := bar.State()
+	if s.SecondsLeft < 0 {
+		t.Errorf("expected SecondsLeft >= 0 on overshoot, got %f", s.SecondsLeft)
 	}
 }
 
@@ -871,6 +919,41 @@ func TestConcurrency(t *testing.T) {
 	result := bar.state.currentNum
 	expect := int64(900)
 	assert.Equal(t, expect, result)
+}
+
+func TestConcurrentMethods(t *testing.T) {
+	bar := NewOptions(-1,
+		OptionSetWidth(10),
+		OptionSetWriter(io.Discard),
+		OptionSetSpinnerChangeInterval(5*time.Millisecond),
+	)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 20; i++ {
+		wg.Add(5)
+		go func() {
+			defer wg.Done()
+			_ = bar.Add(1)
+		}()
+		go func() {
+			defer wg.Done()
+			_ = bar.String()
+		}()
+		go func() {
+			defer wg.Done()
+			_ = bar.IsStarted()
+		}()
+		go func() {
+			defer wg.Done()
+			_ = bar.State()
+		}()
+		go func() {
+			defer wg.Done()
+			_ = bar.Clear()
+		}()
+	}
+	wg.Wait()
+	_ = bar.Finish()
 }
 
 func TestIterationNames(t *testing.T) {
