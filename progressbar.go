@@ -505,14 +505,15 @@ func NewOptions64(max int64, options ...Option) *ProgressBar {
 			defer ticker.Stop()
 
 			for range ticker.C {
-				if b.IsFinished() {
+				b.lock.Lock()
+				if b.state.finished {
+					b.lock.Unlock()
 					return
 				}
-				if b.IsStarted() {
-					b.lock.Lock()
+				if b.isStarted() {
 					b.render()
-					b.lock.Unlock()
 				}
+				b.lock.Unlock()
 			}
 		}()
 	}
@@ -635,6 +636,9 @@ func DefaultSilent(max int64, description ...string) *ProgressBar {
 // String returns the current rendered version of the progress bar.
 // It will never return an empty string while the progress bar is running.
 func (p *ProgressBar) String() string {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	return p.state.rendered
 }
 
@@ -661,7 +665,7 @@ func (p *ProgressBar) StartWithoutRender() {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	if p.IsStarted() {
+	if p.isStarted() {
 		return
 	}
 
@@ -848,6 +852,9 @@ func (p *ProgressBar) renderDetails() error {
 
 // Clear erases the progress bar from the current line
 func (p *ProgressBar) Clear() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
 	return clearProgressBar(p.config, p.state)
 }
 
@@ -962,9 +969,16 @@ func (p *ProgressBar) IsFinished() bool {
 	return p.state.finished
 }
 
+func (p *ProgressBar) isStarted() bool {
+	return !p.state.startTime.IsZero()
+}
+
 // IsStarted returns true if progress bar is started
 func (p *ProgressBar) IsStarted() bool {
-	return !p.state.startTime.IsZero()
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	return p.isStarted()
 }
 
 // render renders the progress bar, updating the maximum
@@ -973,7 +987,7 @@ func (p *ProgressBar) IsStarted() bool {
 func (p *ProgressBar) render() error {
 	// make sure that the rendering is not happening too quickly
 	// but always show if the currentNum reaches the max
-	if !p.IsStarted() {
+	if !p.isStarted() {
 		p.state.startTime = time.Now()
 	} else if time.Since(p.state.lastShown).Nanoseconds() < p.config.throttleDuration.Nanoseconds() &&
 		p.state.currentNum < p.config.max {
@@ -1060,20 +1074,24 @@ func (p *ProgressBar) State() State {
 	s.Max = p.config.max
 	if p.config.ignoreLength {
 		s.Max = -1
+	} else if p.config.max > 0 {
+		s.CurrentPercent = float64(p.state.currentNum) / float64(p.config.max)
 	}
-	s.CurrentPercent = float64(p.state.currentNum) / float64(p.config.max)
 	s.CurrentBytes = p.state.currentBytes
-	if p.IsStarted() {
+	if p.isStarted() {
 		s.SecondsSince = time.Since(p.state.startTime).Seconds()
 	} else {
 		s.SecondsSince = 0
 	}
 
-	if p.state.currentNum > 0 {
+	if !p.config.ignoreLength && p.state.currentNum > 0 && p.config.max > 0 {
 		s.SecondsLeft = s.SecondsSince / float64(p.state.currentNum) * (float64(p.config.max) - float64(p.state.currentNum))
+		if s.SecondsLeft < 0 {
+			s.SecondsLeft = 0
+		}
 	}
 	if s.SecondsSince > 0 {
-		s.KBsPerSecond = (float64(p.state.currentBytes) - p.state.startingBytes) / 1024.0 / s.SecondsSince
+		s.KBsPerSecond = math.Max(0, (float64(p.state.currentBytes)-p.state.startingBytes)/1024.0/s.SecondsSince)
 	}
 	s.Description = p.config.description
 	return s
