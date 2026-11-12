@@ -1602,8 +1602,13 @@ func humanizeBytes(s float64, iec bool) (string, string) {
 		return fmt.Sprintf("%2.0f", s), sizes[0]
 	}
 	e := math.Floor(logn(float64(s), base))
-	suffix := sizes[int(e)]
 	val := math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
+	// "%.0f" prints base-0.5 and up as "1000" (or "1024"), so use the next unit
+	if val >= base-0.5 && int(e) < len(sizes)-1 {
+		e++
+		val = math.Floor(float64(s)/math.Pow(base, e)*10+0.5) / 10
+	}
+	suffix := sizes[int(e)]
 	f := "%.0f"
 	if val < 10 {
 		f = "%.1f"
