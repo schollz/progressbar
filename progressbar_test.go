@@ -1099,6 +1099,27 @@ func TestHumanizeBytesIEC(t *testing.T) {
 	assert.Equal(t, "57 GiB", fmt.Sprintf("%s%s", amount, suffix))
 }
 
+func TestHumanizeBytesUnitBoundary(t *testing.T) {
+	tests := []struct {
+		bytes float64
+		iec   bool
+		want  string
+	}{
+		{999, false, "999 B"},
+		{999.6, false, "1.0 kB"},
+		{999_400, false, "999 kB"},
+		{999_950, false, "1.0 MB"},
+		{999_999_999, false, "1.0 GB"},
+		{1023, true, "1023 B"},
+		{1023.6, true, "1.0 KiB"},
+		{1023.6 * 1024, true, "1.0 MiB"},
+	}
+	for _, tt := range tests {
+		amount, suffix := humanizeBytes(tt.bytes, tt.iec)
+		assert.Equal(t, tt.want, amount+suffix, "%v bytes", tt.bytes)
+	}
+}
+
 func TestProgressBar_StartWithoutRender(t *testing.T) {
 	buf := strings.Builder{}
 	bar := NewOptions(100, OptionSetWriter(&buf))
